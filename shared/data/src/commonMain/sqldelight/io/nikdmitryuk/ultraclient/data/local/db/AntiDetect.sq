@@ -1,0 +1,15 @@
+CREATE TABLE anti_detect_config (
+    id                   INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+    kill_switch_enabled  INTEGER NOT NULL DEFAULT 0,
+    fake_dns_enabled     INTEGER NOT NULL DEFAULT 1,
+    random_port_enabled  INTEGER NOT NULL DEFAULT 1,
+    split_tunnel_json    TEXT    NOT NULL DEFAULT '[]'
+);
+
+select:
+SELECT * FROM anti_detect_config WHERE id = 1;
+
+upsert:
+INSERT OR REPLACE INTO anti_detect_config(
+    id, kill_switch_enabled, fake_dns_enabled, random_port_enabled, split_tunnel_json
+) VALUES (1, :kill_switch_enabled, :fake_dns_enabled, :random_port_enabled, :split_tunnel_json);

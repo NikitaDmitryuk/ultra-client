@@ -1,0 +1,33 @@
+CREATE TABLE vpn_profiles (
+    id           TEXT    NOT NULL PRIMARY KEY,
+    name         TEXT    NOT NULL,
+    raw_url      TEXT    NOT NULL,
+    config_json  TEXT    NOT NULL,
+    is_active    INTEGER NOT NULL DEFAULT 0,
+    created_at   INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM vpn_profiles ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM vpn_profiles WHERE id = :id;
+
+selectActive:
+SELECT * FROM vpn_profiles WHERE is_active = 1 LIMIT 1;
+
+insert:
+INSERT OR REPLACE INTO vpn_profiles(id, name, raw_url, config_json, is_active, created_at)
+VALUES (:id, :name, :raw_url, :config_json, :is_active, :created_at);
+
+setActiveById:
+UPDATE vpn_profiles SET is_active = CASE WHEN id = :id THEN 1 ELSE 0 END;
+
+deleteById:
+DELETE FROM vpn_profiles WHERE id = :id;
+
+deleteAll:
+DELETE FROM vpn_profiles;
+
+countProfiles:
+SELECT COUNT(*) FROM vpn_profiles;

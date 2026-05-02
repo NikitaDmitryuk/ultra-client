@@ -1,0 +1,3 @@
+# Place LibXray.xcframework and SharedPresentation.xcframework here after building.
+# Run: ./xray-build/build.sh
+# Run: ./gradlew :shared:presentation:assembleXCFramework
