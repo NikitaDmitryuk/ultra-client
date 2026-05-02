@@ -1,5 +1,6 @@
 package io.nikdmitryuk.ultraclient.android.tile
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.VpnService
@@ -91,6 +92,7 @@ class UltraTileService : TileService() {
         }
     }
 
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openApp() {
         val intent =
             Intent(this, MainActivity::class.java).apply {

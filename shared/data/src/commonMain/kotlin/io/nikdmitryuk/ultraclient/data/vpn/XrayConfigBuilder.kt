@@ -23,10 +23,6 @@ class XrayConfigBuilder {
             append("""  "inbounds": [""")
             appendLine()
             appendLine(buildSocksInbound(localSocksPort, antiDetect.fakeDnsEnabled))
-            if (antiDetect.fakeDnsEnabled) {
-                appendLine("  ,")
-                appendLine(buildDnsInbound())
-            }
             appendLine("  ],")
 
             append("""  "outbounds": [""")
@@ -76,15 +72,6 @@ class XrayConfigBuilder {
       "sniffing": { "enabled": true, "destOverride": $destOverride }
     }"""
     }
-
-    private fun buildDnsInbound() =
-        """    {
-      "tag": "dns-in",
-      "listen": "198.18.0.3",
-      "port": 53,
-      "protocol": "dokodemo-door",
-      "settings": { "address": "1.1.1.1", "port": 53, "network": "udp" }
-    }"""
 
     private fun buildVlessOutbound(cfg: VlessConfig) =
         """    {
@@ -147,7 +134,7 @@ class XrayConfigBuilder {
         val dnsRule =
             if (fakeDns) {
                 """
-      { "type": "field", "inboundTag": ["dns-in"], "outboundTag": "dns-out" },"""
+      { "type": "field", "port": 53, "outboundTag": "dns-out" },"""
             } else {
                 ""
             }

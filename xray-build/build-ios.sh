@@ -8,7 +8,16 @@ OUTPUT_DIR="$SCRIPT_DIR/output/ios"
 
 mkdir -p "$OUTPUT_DIR"
 
-command -v xcodebuild >/dev/null 2>&1 || { echo "Xcode not found"; exit 1; }
+command -v go         >/dev/null 2>&1 || { echo "ERROR: Go not found. Install from https://go.dev/dl"; exit 1; }
+command -v git        >/dev/null 2>&1 || { echo "ERROR: git not found"; exit 1; }
+command -v xcodebuild >/dev/null 2>&1 || { echo "ERROR: Xcode not found"; exit 1; }
+
+echo "==> Cloning / updating libXray..."
+if [ ! -d "$SRC_DIR/libXray/.git" ]; then
+    git clone --depth 1 https://github.com/XTLS/libXray.git "$SRC_DIR/libXray"
+else
+    git -C "$SRC_DIR/libXray" pull --ff-only
+fi
 
 echo "==> Installing gomobile..."
 go install golang.org/x/mobile/cmd/gomobile@latest
@@ -33,4 +42,4 @@ else
         github.com/xtls/libxray
 fi
 
-echo "==> iOS XCFramework built: $OUTPUT_DIR/LibXray.xcframework"
+echo "==> Done: $OUTPUT_DIR/LibXray.xcframework"

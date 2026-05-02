@@ -38,6 +38,31 @@ jobs:
           java-version: 17
           distribution: temurin
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-xray-${{ hashFiles('xray-build/build-android.sh') }}
+          restore-keys: ${{ runner.os }}-go-xray-
+
+      - name: Install Android NDK
+        run: $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018"
+
+      - name: Build XrayCore AAR
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: |
+          bash xray-build/build-android.sh
+          mkdir -p androidApp/libs
+          cp xray-build/output/android/XrayCore.aar androidApp/libs/
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK

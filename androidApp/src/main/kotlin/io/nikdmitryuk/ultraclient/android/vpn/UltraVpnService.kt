@@ -5,7 +5,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
@@ -92,17 +94,22 @@ class UltraVpnService : VpnService() {
 
         val xrayConfig = XrayConfigBuilder().build(vlessConfig, antiDetect, socksPort, dnsPort)
 
-        startForeground(NOTIFICATION_ID, buildNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification())
+        }
 
         val tun = TunConfigurator(this).establish(antiDetect)
         tunFd = tun
 
-        val started = XrayBridge.startXray(xrayConfig, tun.fd)
-        if (started) {
+        val datDir = GeoDataInstaller.ensureInstalled(this)
+        val xrayError = XrayBridge.startXray(xrayConfig, tun.fd, datDir)
+        if (xrayError == null) {
             VpnStateHolder.emit(VpnState.Connected(vlessConfig.address, System.currentTimeMillis()))
             startWatchdog(antiDetect.killSwitchEnabled)
         } else {
-            VpnStateHolder.emit(VpnState.Error("Failed to start Xray core"))
+            VpnStateHolder.emit(VpnState.Error(xrayError))
             stopSelf()
         }
     }

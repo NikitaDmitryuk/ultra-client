@@ -6,7 +6,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.CompositionLocalProvider
 import io.nikdmitryuk.ultraclient.presentation.App
+import io.nikdmitryuk.ultraclient.presentation.platform.LocalVpnPermissionRequester
 
 class MainActivity : ComponentActivity() {
     private val vpnPermissionLauncher =
@@ -26,7 +28,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            App()
+            CompositionLocalProvider(
+                LocalVpnPermissionRequester provides { onResult -> requestVpnPermission(onResult) },
+            ) {
+                App()
+            }
         }
     }
 

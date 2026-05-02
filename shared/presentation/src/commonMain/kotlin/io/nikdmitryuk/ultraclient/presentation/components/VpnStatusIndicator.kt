@@ -35,7 +35,7 @@ fun VpnStatusIndicator(
         when (state) {
             is VpnState.Connected -> UltraConnected to "Connected"
             is VpnState.Connecting -> UltraConnecting to "Connecting..."
-            is VpnState.Error -> UltraError to "Error"
+            is VpnState.Error -> UltraError to "Error: ${state.message}"
             VpnState.Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant to "Disconnected"
         }
 

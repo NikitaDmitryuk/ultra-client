@@ -9,6 +9,9 @@ import io.nikdmitryuk.ultraclient.domain.usecase.ConnectVpnUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.DisconnectVpnUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.GetProfilesUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.GetVpnStateUseCase
+import io.nikdmitryuk.ultraclient.presentation.platform.measurePingMs
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +25,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val showSplitTunnelWarning: Boolean = false,
+    val pingLatencyMs: Long? = null,
 )
 
 class HomeScreenModel(
@@ -34,6 +38,8 @@ class HomeScreenModel(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private var pingJob: Job? = null
+
     init {
         screenModelScope.launch {
             combine(
@@ -43,7 +49,34 @@ class HomeScreenModel(
             ) { state, profiles, antiDetect ->
                 Triple(state, profiles.firstOrNull { it.isActive }, antiDetect.splitTunnelRules.isEmpty())
             }.collect { (state, active, noRules) ->
-                _uiState.update { it.copy(vpnState = state, activeProfile = active, showSplitTunnelWarning = noRules) }
+                _uiState.update { current ->
+                    current.copy(
+                        vpnState = state,
+                        activeProfile = active,
+                        showSplitTunnelWarning = noRules,
+                        errorMessage = if (state is VpnState.Error && current.vpnState !is VpnState.Error) {
+                            state.message
+                        } else {
+                            current.errorMessage
+                        },
+                    )
+                }
+                if (state is VpnState.Connected) {
+                    if (pingJob?.isActive != true) startPingLoop()
+                } else {
+                    pingJob?.cancel()
+                    pingJob = null
+                    _uiState.update { it.copy(pingLatencyMs = null) }
+                }
+            }
+        }
+    }
+
+    private fun startPingLoop() {
+        pingJob = screenModelScope.launch {
+            while (true) {
+                _uiState.update { it.copy(pingLatencyMs = measurePingMs()) }
+                delay(5_000)
             }
         }
     }
