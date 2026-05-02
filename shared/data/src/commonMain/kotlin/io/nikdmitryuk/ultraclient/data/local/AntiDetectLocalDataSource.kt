@@ -45,7 +45,6 @@ class AntiDetectLocalDataSource(
                         config.splitTunnelRules,
                     ),
             )
-            Unit
         }
 
     private fun Anti_detect_config.toDomain(json: Json): AntiDetectConfig =

@@ -1,3 +1,5 @@
+[![Qodana](https://github.com/NikitaDmitryuk/ultra-client/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/NikitaDmitryuk/ultra-client/actions/workflows/qodana_code_quality.yml)
+
 # ultra-client
 
 A Kotlin Multiplatform (KMP) mobile client for the [VLESS](https://xtls.github.io/en/config/outbounds/vless.html) protocol, powered by [Xray-core](https://github.com/XTLS/Xray-core). Runs on **Android** and **iOS** from a single shared codebase.

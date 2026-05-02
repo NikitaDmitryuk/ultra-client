@@ -50,25 +50,21 @@ class VpnProfileLocalDataSource(
                 is_active = if (profile.isActive) 1L else 0L,
                 created_at = profile.createdAt,
             )
-            Unit
         }
 
     suspend fun setActive(id: String): Unit =
         withContext(Dispatchers.Default) {
             db.vpnProfilesQueries.setActiveById(id)
-            Unit
         }
 
     suspend fun delete(id: String): Unit =
         withContext(Dispatchers.Default) {
             db.vpnProfilesQueries.deleteById(id)
-            Unit
         }
 
     suspend fun deleteAll(): Unit =
         withContext(Dispatchers.Default) {
             db.vpnProfilesQueries.deleteAll()
-            Unit
         }
 
     private fun Vpn_profiles.toDomain(json: Json): VpnProfile =

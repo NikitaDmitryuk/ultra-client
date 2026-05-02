@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,7 +56,7 @@ fun PowerButton(
                     .border(2.dp, color, CircleShape),
         ) {
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Filled.Power,
+                imageVector = Icons.Filled.PowerSettingsNew,
                 contentDescription = "Toggle VPN",
                 tint = color,
                 modifier = Modifier.size(48.dp),
