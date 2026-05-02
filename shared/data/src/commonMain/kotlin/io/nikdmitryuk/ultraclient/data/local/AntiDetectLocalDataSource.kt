@@ -18,17 +18,17 @@ class AntiDetectLocalDataSource(private val db: UltraClientDatabase) {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun observe(): Flow<AntiDetectConfig> =
-        db.antiDetectConfigQueries.select()
+        db.antiDetectQueries.select()
             .asFlow()
             .mapToOneOrNull(Dispatchers.Default)
             .map { row -> row?.toDomain(json) ?: AntiDetectConfig() }
 
     suspend fun get(): AntiDetectConfig = withContext(Dispatchers.Default) {
-        db.antiDetectConfigQueries.select().executeAsOneOrNull()?.toDomain(json) ?: AntiDetectConfig()
+        db.antiDetectQueries.select().executeAsOneOrNull()?.toDomain(json) ?: AntiDetectConfig()
     }
 
-    suspend fun upsert(config: AntiDetectConfig) = withContext(Dispatchers.Default) {
-        db.antiDetectConfigQueries.upsert(
+    suspend fun upsert(config: AntiDetectConfig): Unit = withContext(Dispatchers.Default) {
+        db.antiDetectQueries.upsert(
             kill_switch_enabled = if (config.killSwitchEnabled) 1L else 0L,
             fake_dns_enabled = if (config.fakeDnsEnabled) 1L else 0L,
             random_port_enabled = if (config.randomPortEnabled) 1L else 0L,
@@ -37,6 +37,7 @@ class AntiDetectLocalDataSource(private val db: UltraClientDatabase) {
                 config.splitTunnelRules
             )
         )
+        Unit
     }
 
     private fun Anti_detect_config.toDomain(json: Json): AntiDetectConfig = AntiDetectConfig(

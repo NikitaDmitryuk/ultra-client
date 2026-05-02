@@ -45,4 +45,10 @@ dependencies {
     implementation(libs.android.activity.compose)
     implementation(libs.koin.android)
     implementation(libs.coroutines.android)
+    implementation(libs.androidx.core.ktx)
+
+    val xrayAar = file("libs/XrayCore.aar")
+    if (xrayAar.exists()) {
+        implementation(files("libs/XrayCore.aar"))
+    }
 }
