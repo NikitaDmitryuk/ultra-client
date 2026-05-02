@@ -4,6 +4,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import io.nikdmitryuk.ultraclient.domain.model.VpnProfile
 import io.nikdmitryuk.ultraclient.domain.model.VpnState
+import io.nikdmitryuk.ultraclient.domain.repository.AntiDetectRepository
 import io.nikdmitryuk.ultraclient.domain.usecase.ConnectVpnUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.DisconnectVpnUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.GetProfilesUseCase
@@ -19,14 +20,16 @@ data class HomeUiState(
     val vpnState: VpnState = VpnState.Disconnected,
     val activeProfile: VpnProfile? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val showSplitTunnelWarning: Boolean = false
 )
 
 class HomeScreenModel(
     private val connectVpnUseCase: ConnectVpnUseCase,
     private val disconnectVpnUseCase: DisconnectVpnUseCase,
     private val getVpnStateUseCase: GetVpnStateUseCase,
-    private val getProfilesUseCase: GetProfilesUseCase
+    private val getProfilesUseCase: GetProfilesUseCase,
+    private val antiDetectRepository: AntiDetectRepository
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -36,11 +39,12 @@ class HomeScreenModel(
         screenModelScope.launch {
             combine(
                 getVpnStateUseCase(),
-                getProfilesUseCase()
-            ) { state, profiles ->
-                Pair(state, profiles.firstOrNull { it.isActive })
-            }.collect { (state, active) ->
-                _uiState.update { it.copy(vpnState = state, activeProfile = active) }
+                getProfilesUseCase(),
+                antiDetectRepository.observe()
+            ) { state, profiles, antiDetect ->
+                Triple(state, profiles.firstOrNull { it.isActive }, antiDetect.splitTunnelRules.isEmpty())
+            }.collect { (state, active, noRules) ->
+                _uiState.update { it.copy(vpnState = state, activeProfile = active, showSplitTunnelWarning = noRules) }
             }
         }
     }

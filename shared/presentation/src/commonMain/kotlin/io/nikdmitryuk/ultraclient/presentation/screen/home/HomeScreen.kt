@@ -2,10 +2,19 @@ package io.nikdmitryuk.ultraclient.presentation.screen.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -27,6 +36,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import io.nikdmitryuk.ultraclient.presentation.components.PowerButton
 import io.nikdmitryuk.ultraclient.presentation.components.VpnStatusIndicator
 import io.nikdmitryuk.ultraclient.presentation.screen.profiles.ProfilesScreen
+import io.nikdmitryuk.ultraclient.presentation.screen.settings.SettingsScreen
 
 class HomeScreen : Screen {
 
@@ -63,6 +73,43 @@ class HomeScreen : Screen {
                 )
                 Spacer(Modifier.height(8.dp))
                 VpnStatusIndicator(state = state.vpnState)
+                if (state.showSplitTunnelWarning) {
+                    Spacer(Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "No split-tunnel rules configured",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Text(
+                                    "All apps are routed through VPN. Go to Settings to choose which apps bypass the tunnel.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                TextButton(onClick = { navigator.push(SettingsScreen()) }) {
+                                    Text("Configure", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
+                    }
+                }
                 Spacer(Modifier.height(48.dp))
                 PowerButton(
                     state = state.vpnState,
