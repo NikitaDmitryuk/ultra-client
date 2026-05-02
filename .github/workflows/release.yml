@@ -74,9 +74,22 @@ jobs:
           cp -R shared/presentation/build/XCFrameworks/release/SharedPresentation.xcframework \
                iosApp/Frameworks/SharedPresentation.xcframework
 
+      # secrets context is unavailable in if: expressions; read it via env and
+      # write a plain flag to GITHUB_OUTPUT instead.
+      - name: Detect signing configuration
+        id: signing
+        env:
+          CERT: ${{ secrets.IOS_CERT_BASE64 }}
+        run: |
+          if [ -n "$CERT" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # ── Unsigned path: build for simulator + package as IPA-compatible zip ──────
       - name: Build for simulator (unsigned)
-        if: ${{ secrets.IOS_CERT_BASE64 == '' }}
+        if: steps.signing.outputs.configured == 'false'
         run: |
           xcodebuild build \
             -project iosApp/iosApp.xcodeproj \
@@ -88,7 +101,7 @@ jobs:
             2>&1 | tail -20
 
       - name: Package simulator app
-        if: ${{ secrets.IOS_CERT_BASE64 == '' }}
+        if: steps.signing.outputs.configured == 'false'
         run: |
           APP_PATH=$(find $RUNNER_TEMP/derivedData -name "iosApp.app" | head -1)
           mkdir -p $RUNNER_TEMP/ipa/Payload
@@ -97,7 +110,7 @@ jobs:
 
       # ── Signed path: archive + export real IPA for device ────────────────────
       - name: Import signing certificate
-        if: ${{ secrets.IOS_CERT_BASE64 != '' }}
+        if: steps.signing.outputs.configured == 'true'
         env:
           IOS_CERT_BASE64: ${{ secrets.IOS_CERT_BASE64 }}
           IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
@@ -115,7 +128,7 @@ jobs:
             > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
       - name: Archive (signed)
-        if: ${{ secrets.IOS_CERT_BASE64 != '' }}
+        if: steps.signing.outputs.configured == 'true'
         run: |
           xcodebuild archive \
             -project iosApp/iosApp.xcodeproj \
@@ -124,7 +137,7 @@ jobs:
             -archivePath $RUNNER_TEMP/ultra.xcarchive
 
       - name: Export IPA (signed)
-        if: ${{ secrets.IOS_CERT_BASE64 != '' }}
+        if: steps.signing.outputs.configured == 'true'
         run: |
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/ultra.xcarchive \
