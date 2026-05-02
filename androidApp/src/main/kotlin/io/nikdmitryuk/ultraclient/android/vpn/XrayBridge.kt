@@ -14,18 +14,28 @@ object XrayBridge {
     }
 
     /** Returns null on success, or an error message string on failure. */
-    fun startXray(configJson: String, tunFd: Int, datDir: String): String? {
+    fun startXray(
+        configJson: String,
+        tunFd: Int,
+        datDir: String,
+    ): String? {
         val lib = libxrayClass ?: return "XrayCore library not found (AAR missing)"
         return try {
             lib.getMethod("setTunFd", Int::class.java).invoke(null, tunFd)
 
-            val base64Request = lib.getMethod(
-                "newXrayRunFromJSONRequest",
-                String::class.java, String::class.java, String::class.java,
-            ).invoke(null, datDir, "", configJson) as? String ?: ""
+            val base64Request =
+                lib
+                    .getMethod(
+                        "newXrayRunFromJSONRequest",
+                        String::class.java,
+                        String::class.java,
+                        String::class.java,
+                    ).invoke(null, datDir, "", configJson) as? String ?: ""
 
-            val base64Response = lib.getMethod("runXrayFromJSON", String::class.java)
-                .invoke(null, base64Request) as? String ?: ""
+            val base64Response =
+                lib
+                    .getMethod("runXrayFromJSON", String::class.java)
+                    .invoke(null, base64Request) as? String ?: ""
 
             decodeError(base64Response)
         } catch (e: InvocationTargetException) {
@@ -62,8 +72,10 @@ object XrayBridge {
         val lib = libxrayClass ?: return "{}"
         return try {
             val base64Req = Base64.encodeToString(serverAddr.toByteArray(), Base64.NO_WRAP)
-            val base64Response = lib.getMethod("queryStats", String::class.java)
-                .invoke(null, base64Req) as? String ?: ""
+            val base64Response =
+                lib
+                    .getMethod("queryStats", String::class.java)
+                    .invoke(null, base64Req) as? String ?: ""
             val json = JSONObject(String(Base64.decode(base64Response, Base64.DEFAULT)))
             json.optString("data", "{}")
         } catch (_: Exception) {
