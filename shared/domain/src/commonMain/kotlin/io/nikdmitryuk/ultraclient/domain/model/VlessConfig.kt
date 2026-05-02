@@ -19,5 +19,5 @@ data class VlessConfig(
     val alpn: String = "",
     val wsPath: String = "",
     val wsHost: String = "",
-    val grpcServiceName: String = ""
+    val grpcServiceName: String = "",
 )

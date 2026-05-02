@@ -17,16 +17,15 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val config: AntiDetectConfig = AntiDetectConfig(),
     val availableApps: List<SplitTunnelRule> = emptyList(),
-    val isLoadingApps: Boolean = false
+    val isLoadingApps: Boolean = false,
 )
 
 class SettingsScreenModel(
     private val antiDetectRepository: AntiDetectRepository,
     private val updateAntiDetectUseCase: UpdateAntiDetectUseCase,
     private val updateSplitTunnelUseCase: UpdateSplitTunnelUseCase,
-    private val installedAppsProvider: InstalledAppsProvider
+    private val installedAppsProvider: InstalledAppsProvider,
 ) : ScreenModel {
-
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
@@ -43,22 +42,29 @@ class SettingsScreenModel(
             _uiState.update { it.copy(isLoadingApps = true) }
             val apps = installedAppsProvider.getInstalledApps()
             val rules = _uiState.value.config.splitTunnelRules
-            val merged = apps.map { app ->
-                rules.find { it.appId == app.appId } ?: app
-            }
+            val merged =
+                apps.map { app ->
+                    rules.find { it.appId == app.appId } ?: app
+                }
             _uiState.update { it.copy(availableApps = merged, isLoadingApps = false) }
         }
     }
 
     fun toggleKillSwitch(enabled: Boolean) = updateConfig { it.copy(killSwitchEnabled = enabled) }
+
     fun toggleFakeDns(enabled: Boolean) = updateConfig { it.copy(fakeDnsEnabled = enabled) }
+
     fun toggleRandomPort(enabled: Boolean) = updateConfig { it.copy(randomPortEnabled = enabled) }
 
-    fun toggleAppExclusion(appId: String, excluded: Boolean) {
+    fun toggleAppExclusion(
+        appId: String,
+        excluded: Boolean,
+    ) {
         val current = _uiState.value
-        val updated = current.availableApps.map {
-            if (it.appId == appId) it.copy(isExcluded = excluded) else it
-        }
+        val updated =
+            current.availableApps.map {
+                if (it.appId == appId) it.copy(isExcluded = excluded) else it
+            }
         _uiState.update { it.copy(availableApps = updated) }
         screenModelScope.launch {
             updateSplitTunnelUseCase(updated.filter { it.isExcluded })

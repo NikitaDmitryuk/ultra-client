@@ -33,7 +33,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 
 class SettingsScreen : Screen {
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -51,26 +50,42 @@ class SettingsScreen : Screen {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                         }
-                    }
+                    },
                 )
             },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
         ) { padding ->
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)
+                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             ) {
                 item {
                     Text(
                         "Protection",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(vertical = 12.dp)
+                        modifier = Modifier.padding(vertical = 12.dp),
                     )
                 }
-                item { ToggleRow("Kill Switch", "Block all traffic if VPN drops", state.config.killSwitchEnabled) { model.toggleKillSwitch(it) } }
-                item { ToggleRow("Fake DNS", "Route DNS through tunnel to prevent leaks", state.config.fakeDnsEnabled) { model.toggleFakeDns(it) } }
-                item { ToggleRow("Random ports", "Use random local ports to prevent fingerprinting", state.config.randomPortEnabled) { model.toggleRandomPort(it) } }
+                item {
+                    ToggleRow(
+                        "Kill Switch",
+                        "Block all traffic if VPN drops",
+                        state.config.killSwitchEnabled,
+                    ) { model.toggleKillSwitch(it) }
+                }
+                item {
+                    ToggleRow(
+                        "Fake DNS",
+                        "Route DNS through tunnel to prevent leaks",
+                        state.config.fakeDnsEnabled,
+                    ) { model.toggleFakeDns(it) }
+                }
+                item {
+                    ToggleRow("Random ports", "Use random local ports to prevent fingerprinting", state.config.randomPortEnabled) {
+                        model.toggleRandomPort(it)
+                    }
+                }
 
                 if (state.availableApps.isNotEmpty()) {
                     item {
@@ -79,21 +94,25 @@ class SettingsScreen : Screen {
                             "Split Tunneling (excluded apps bypass VPN)",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
                     items(state.availableApps, key = { it.appId }) { rule ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         ) {
                             Checkbox(
                                 checked = rule.isExcluded,
-                                onCheckedChange = { model.toggleAppExclusion(rule.appId, it) }
+                                onCheckedChange = { model.toggleAppExclusion(rule.appId, it) },
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(rule.appName, style = MaterialTheme.typography.bodyMedium)
-                                Text(rule.appId, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    rule.appId,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                         }
                     }
@@ -108,11 +127,11 @@ private fun ToggleRow(
     title: String,
     subtitle: String,
     checked: Boolean,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)

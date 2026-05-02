@@ -21,7 +21,7 @@ data class HomeUiState(
     val activeProfile: VpnProfile? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val showSplitTunnelWarning: Boolean = false
+    val showSplitTunnelWarning: Boolean = false,
 )
 
 class HomeScreenModel(
@@ -29,9 +29,8 @@ class HomeScreenModel(
     private val disconnectVpnUseCase: DisconnectVpnUseCase,
     private val getVpnStateUseCase: GetVpnStateUseCase,
     private val getProfilesUseCase: GetProfilesUseCase,
-    private val antiDetectRepository: AntiDetectRepository
+    private val antiDetectRepository: AntiDetectRepository,
 ) : ScreenModel {
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -40,7 +39,7 @@ class HomeScreenModel(
             combine(
                 getVpnStateUseCase(),
                 getProfilesUseCase(),
-                antiDetectRepository.observe()
+                antiDetectRepository.observe(),
             ) { state, profiles, antiDetect ->
                 Triple(state, profiles.firstOrNull { it.isActive }, antiDetect.splitTunnelRules.isEmpty())
             }.collect { (state, active, noRules) ->
@@ -53,10 +52,11 @@ class HomeScreenModel(
         val current = _uiState.value
         when (current.vpnState) {
             is VpnState.Disconnected, is VpnState.Error -> {
-                val profileId = current.activeProfile?.id ?: run {
-                    _uiState.update { it.copy(errorMessage = "No profile selected") }
-                    return
-                }
+                val profileId =
+                    current.activeProfile?.id ?: run {
+                        _uiState.update { it.copy(errorMessage = "No profile selected") }
+                        return
+                    }
                 requestPermission { granted ->
                     if (granted) connectVpn(profileId)
                 }

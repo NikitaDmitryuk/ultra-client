@@ -7,7 +7,13 @@ import kotlinx.coroutines.flow.Flow
 
 interface VpnEngine {
     val state: Flow<VpnState>
-    suspend fun connect(config: VlessConfig, antiDetect: AntiDetectConfig): Result<Unit>
+
+    suspend fun connect(
+        config: VlessConfig,
+        antiDetect: AntiDetectConfig,
+    ): Result<Unit>
+
     suspend fun disconnect(): Result<Unit>
+
     fun isConnected(): Boolean
 }

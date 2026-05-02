@@ -7,5 +7,5 @@ data class AntiDetectConfig(
     val killSwitchEnabled: Boolean = false,
     val fakeDnsEnabled: Boolean = true,
     val randomPortEnabled: Boolean = true,
-    val splitTunnelRules: List<SplitTunnelRule> = emptyList()
+    val splitTunnelRules: List<SplitTunnelRule> = emptyList(),
 )

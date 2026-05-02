@@ -20,7 +20,7 @@ jobs:
           chmod +x ktlint
 
       - name: Run ktlint
-        run: ./ktlint --relative "{shared,androidApp}/**/*.kt"
+        run: ./ktlint --relative "{shared,androidApp}/src/**/*.kt"
 
   # ─── Tests ───────────────────────────────────────────────────────────────────
   test:

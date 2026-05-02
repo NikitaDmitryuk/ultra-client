@@ -1,9 +1,11 @@
 package io.nikdmitryuk.ultraclient.android.vpn
 
 object XrayBridge {
-
-    fun startXray(configJson: String, tunFd: Int): Boolean {
-        return try {
+    fun startXray(
+        configJson: String,
+        tunFd: Int,
+    ): Boolean =
+        try {
             // libxray.Libxray.startXray(configJson, tunFd.toLong())
             // The exact method depends on the compiled XrayCore.aar.
             // Reflection-based call allows compile without the AAR during development.
@@ -19,10 +21,9 @@ object XrayBridge {
             android.util.Log.e("XrayBridge", "startXray failed", e)
             false
         }
-    }
 
-    fun stopXray(): Boolean {
-        return try {
+    fun stopXray(): Boolean =
+        try {
             val libxray = Class.forName("libxray.Libxray")
             val method = libxray.getMethod("stopXray")
             val result = method.invoke(null) as? String ?: ""
@@ -31,25 +32,25 @@ object XrayBridge {
             android.util.Log.e("XrayBridge", "stopXray failed", e)
             false
         }
-    }
 
-    fun isRunning(): Boolean {
-        return try {
+    fun isRunning(): Boolean =
+        try {
             val libxray = Class.forName("libxray.Libxray")
             val method = libxray.getMethod("isXrayRunning")
             method.invoke(null) as? Boolean ?: false
         } catch (e: Exception) {
             false
         }
-    }
 
-    fun queryStats(tag: String, direct: String): String {
-        return try {
+    fun queryStats(
+        tag: String,
+        direct: String,
+    ): String =
+        try {
             val libxray = Class.forName("libxray.Libxray")
             val method = libxray.getMethod("queryStats", String::class.java, String::class.java)
             method.invoke(null, tag, direct) as? String ?: "{}"
         } catch (e: Exception) {
             "{}"
         }
-    }
 }

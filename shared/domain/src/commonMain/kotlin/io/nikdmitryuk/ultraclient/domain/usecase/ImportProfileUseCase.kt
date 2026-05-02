@@ -6,11 +6,12 @@ import io.nikdmitryuk.ultraclient.domain.repository.VpnProfileRepository
 
 class ImportProfileUseCase(
     private val parser: VpnUrlParser,
-    private val repository: VpnProfileRepository
+    private val repository: VpnProfileRepository,
 ) {
-    suspend operator fun invoke(rawUrl: String): Result<VpnProfile> = runCatching {
-        val profile = parser.parse(rawUrl)
-        repository.insert(profile)
-        profile
-    }
+    suspend operator fun invoke(rawUrl: String): Result<VpnProfile> =
+        runCatching {
+            val profile = parser.parse(rawUrl)
+            repository.insert(profile)
+            profile
+        }
 }

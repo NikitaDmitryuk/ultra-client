@@ -8,10 +8,10 @@ setup:
 	chmod +x ktlint
 
 format: setup
-	$(KTLINT) --format "{shared,androidApp}/**/*.kt"
+	$(KTLINT) --format "{shared,androidApp}/src/**/*.kt"
 
 lint: setup
-	$(KTLINT) --relative "{shared,androidApp}/**/*.kt"
+	$(KTLINT) --relative "{shared,androidApp}/src/**/*.kt"
 
 test:
 	./gradlew :shared:domain:jvmTest :shared:data:jvmTest

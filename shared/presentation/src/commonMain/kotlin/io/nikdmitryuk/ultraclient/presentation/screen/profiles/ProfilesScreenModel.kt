@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 data class ProfilesUiState(
     val profiles: List<VpnProfile> = emptyList(),
     val isImporting: Boolean = false,
-    val importError: String? = null
+    val importError: String? = null,
 )
 
 class ProfilesScreenModel(
@@ -25,9 +25,8 @@ class ProfilesScreenModel(
     private val importProfileUseCase: ImportProfileUseCase,
     private val deleteProfileUseCase: DeleteProfileUseCase,
     private val setActiveProfileUseCase: SetActiveProfileUseCase,
-    private val clipboardReader: ClipboardReader
+    private val clipboardReader: ClipboardReader,
 ) : ScreenModel {
-
     private val _uiState = MutableStateFlow(ProfilesUiState())
     val uiState: StateFlow<ProfilesUiState> = _uiState.asStateFlow()
 

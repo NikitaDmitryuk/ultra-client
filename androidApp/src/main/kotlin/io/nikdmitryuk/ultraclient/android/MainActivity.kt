@@ -1,7 +1,6 @@
 package io.nikdmitryuk.ultraclient.android
 
 import android.app.Activity
-import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,17 +9,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import io.nikdmitryuk.ultraclient.presentation.App
 
 class MainActivity : ComponentActivity() {
-
-    private val vpnPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            vpnPermissionGrantedCallback?.invoke(true)
-        } else {
-            vpnPermissionGrantedCallback?.invoke(false)
+    private val vpnPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                vpnPermissionGrantedCallback?.invoke(true)
+            } else {
+                vpnPermissionGrantedCallback?.invoke(false)
+            }
+            vpnPermissionGrantedCallback = null
         }
-        vpnPermissionGrantedCallback = null
-    }
 
     var vpnPermissionGrantedCallback: ((Boolean) -> Unit)? = null
 

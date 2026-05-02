@@ -5,7 +5,9 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import io.nikdmitryuk.ultraclient.domain.model.SplitTunnelRule
 
-class AndroidInstalledAppsProvider(private val context: Context) : InstalledAppsProvider {
+class AndroidInstalledAppsProvider(
+    private val context: Context,
+) : InstalledAppsProvider {
     override suspend fun getInstalledApps(): List<SplitTunnelRule> =
         context.packageManager
             .getInstalledApplications(PackageManager.GET_META_DATA)
@@ -14,8 +16,7 @@ class AndroidInstalledAppsProvider(private val context: Context) : InstalledApps
                 SplitTunnelRule(
                     appId = it.packageName,
                     appName = it.loadLabel(context.packageManager).toString(),
-                    isExcluded = false
+                    isExcluded = false,
                 )
-            }
-            .sortedBy { it.appName }
+            }.sortedBy { it.appName }
 }

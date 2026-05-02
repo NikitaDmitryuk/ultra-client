@@ -6,7 +6,8 @@ import io.nikdmitryuk.ultraclient.domain.vpn.VpnEngine
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-actual val platformDataModule: Module = module {
-    single { DatabaseDriverFactory(get()) }
-    single<VpnEngine> { PlatformVpnEngine(get()) }
-}
+actual val platformDataModule: Module =
+    module {
+        single { DatabaseDriverFactory(get()) }
+        single<VpnEngine> { PlatformVpnEngine(get()) }
+    }

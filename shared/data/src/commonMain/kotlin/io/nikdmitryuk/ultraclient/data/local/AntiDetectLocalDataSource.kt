@@ -13,40 +13,50 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
-class AntiDetectLocalDataSource(private val db: UltraClientDatabase) {
-
+class AntiDetectLocalDataSource(
+    private val db: UltraClientDatabase,
+) {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun observe(): Flow<AntiDetectConfig> =
-        db.antiDetectQueries.select()
+        db.antiDetectQueries
+            .select()
             .asFlow()
             .mapToOneOrNull(Dispatchers.Default)
             .map { row -> row?.toDomain(json) ?: AntiDetectConfig() }
 
-    suspend fun get(): AntiDetectConfig = withContext(Dispatchers.Default) {
-        db.antiDetectQueries.select().executeAsOneOrNull()?.toDomain(json) ?: AntiDetectConfig()
-    }
+    suspend fun get(): AntiDetectConfig =
+        withContext(Dispatchers.Default) {
+            db.antiDetectQueries
+                .select()
+                .executeAsOneOrNull()
+                ?.toDomain(json) ?: AntiDetectConfig()
+        }
 
-    suspend fun upsert(config: AntiDetectConfig): Unit = withContext(Dispatchers.Default) {
-        db.antiDetectQueries.upsert(
-            kill_switch_enabled = if (config.killSwitchEnabled) 1L else 0L,
-            fake_dns_enabled = if (config.fakeDnsEnabled) 1L else 0L,
-            random_port_enabled = if (config.randomPortEnabled) 1L else 0L,
-            split_tunnel_json = json.encodeToString(
-                ListSerializer(SplitTunnelRule.serializer()),
-                config.splitTunnelRules
+    suspend fun upsert(config: AntiDetectConfig): Unit =
+        withContext(Dispatchers.Default) {
+            db.antiDetectQueries.upsert(
+                kill_switch_enabled = if (config.killSwitchEnabled) 1L else 0L,
+                fake_dns_enabled = if (config.fakeDnsEnabled) 1L else 0L,
+                random_port_enabled = if (config.randomPortEnabled) 1L else 0L,
+                split_tunnel_json =
+                    json.encodeToString(
+                        ListSerializer(SplitTunnelRule.serializer()),
+                        config.splitTunnelRules,
+                    ),
             )
-        )
-        Unit
-    }
+            Unit
+        }
 
-    private fun Anti_detect_config.toDomain(json: Json): AntiDetectConfig = AntiDetectConfig(
-        killSwitchEnabled = kill_switch_enabled == 1L,
-        fakeDnsEnabled = fake_dns_enabled == 1L,
-        randomPortEnabled = random_port_enabled == 1L,
-        splitTunnelRules = json.decodeFromString(
-            ListSerializer(SplitTunnelRule.serializer()),
-            split_tunnel_json
+    private fun Anti_detect_config.toDomain(json: Json): AntiDetectConfig =
+        AntiDetectConfig(
+            killSwitchEnabled = kill_switch_enabled == 1L,
+            fakeDnsEnabled = fake_dns_enabled == 1L,
+            randomPortEnabled = random_port_enabled == 1L,
+            splitTunnelRules =
+                json.decodeFromString(
+                    ListSerializer(SplitTunnelRule.serializer()),
+                    split_tunnel_json,
+                ),
         )
-    )
 }

@@ -36,7 +36,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import io.nikdmitryuk.ultraclient.presentation.components.ProfileCard
 
 class ProfilesScreen : Screen {
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -61,49 +60,49 @@ class ProfilesScreen : Screen {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                         }
-                    }
+                    },
                 )
             },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = { model.importFromClipboard() },
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.primary,
                 ) {
                     if (state.isImporting) {
                         CircularProgressIndicator(
                             color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(12.dp),
                         )
                     } else {
                         Icon(Icons.Default.ContentPaste, "Paste from clipboard")
                     }
                 }
             },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
         ) { padding ->
             if (state.profiles.isEmpty()) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize().padding(padding)
+                    modifier = Modifier.fillMaxSize().padding(padding),
                 ) {
                     Text(
                         text = "No profiles yet.\nTap the paste button to add a VLESS config.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.padding(padding),
                 ) {
                     items(state.profiles, key = { it.id }) { profile ->
                         ProfileCard(
                             profile = profile,
                             onSelect = { model.setActiveProfile(profile.id) },
-                            onDelete = { model.deleteProfile(profile.id) }
+                            onDelete = { model.deleteProfile(profile.id) },
                         )
                     }
                 }

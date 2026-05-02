@@ -7,22 +7,21 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class VlessUrlParserTest {
-
     private val parser = VlessUrlParser()
 
     // vless://uuid@host:port?security=reality&pbk=KEY&sid=ID&fp=chrome&sni=sni.example.com&flow=xtls-rprx-vision#My%20Server
     private val realityUrl =
         "vless://123e4567-e89b-12d3-a456-426614174000@example.com:443" +
-        "?security=reality&pbk=ABC123pubkey&sid=deadbeef&fp=chrome" +
-        "&sni=www.example.com&flow=xtls-rprx-vision&type=tcp#My%20Server"
+            "?security=reality&pbk=ABC123pubkey&sid=deadbeef&fp=chrome" +
+            "&sni=www.example.com&flow=xtls-rprx-vision&type=tcp#My%20Server"
 
     private val tlsUrl =
         "vless://aaaabbbb-cccc-dddd-eeee-ffffffffffff@tls.example.com:8443" +
-        "?security=tls&sni=tls.example.com&fp=firefox&type=tcp"
+            "?security=tls&sni=tls.example.com&fp=firefox&type=tcp"
 
     private val wsUrl =
         "vless://11112222-3333-4444-5555-666677778888@ws.example.com:80" +
-        "?security=none&type=ws&path=%2Fapi&host=ws.example.com"
+            "?security=none&type=ws&path=%2Fapi&host=ws.example.com"
 
     @Test
     fun canHandleReturnsTrueForVlessScheme() {

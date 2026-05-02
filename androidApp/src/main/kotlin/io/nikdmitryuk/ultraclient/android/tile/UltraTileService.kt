@@ -25,7 +25,6 @@ import kotlinx.serialization.json.Json
 import org.koin.android.ext.android.inject
 
 class UltraTileService : TileService() {
-
     private val profileRepository: VpnProfileRepository by inject()
     private val antiDetectRepository: AntiDetectRepository by inject()
     private val json = Json { ignoreUnknownKeys = true }
@@ -58,7 +57,7 @@ class UltraTileService : TileService() {
     private fun disconnect() {
         startService(
             Intent(this, UltraVpnService::class.java)
-                .apply { action = UltraVpnService.ACTION_DISCONNECT }
+                .apply { action = UltraVpnService.ACTION_DISCONNECT },
         )
     }
 
@@ -81,24 +80,25 @@ class UltraTileService : TileService() {
                     action = UltraVpnService.ACTION_CONNECT
                     putExtra(
                         UltraVpnService.EXTRA_VLESS_CONFIG,
-                        json.encodeToString(VlessConfig.serializer(), profile.config)
+                        json.encodeToString(VlessConfig.serializer(), profile.config),
                     )
                     putExtra(
                         UltraVpnService.EXTRA_ANTI_DETECT,
-                        json.encodeToString(AntiDetectConfig.serializer(), antiDetect)
+                        json.encodeToString(AntiDetectConfig.serializer(), antiDetect),
                     )
-                }
+                },
             )
         }
     }
 
     private fun openApp() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        val intent =
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startActivityAndCollapse(
-                PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE),
             )
         } else {
             @Suppress("DEPRECATION")

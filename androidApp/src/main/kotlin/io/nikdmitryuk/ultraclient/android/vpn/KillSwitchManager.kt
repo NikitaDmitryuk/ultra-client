@@ -3,8 +3,9 @@ package io.nikdmitryuk.ultraclient.android.vpn
 import android.content.Context
 import android.content.Intent
 
-class KillSwitchManager(private val context: Context) {
-
+class KillSwitchManager(
+    private val context: Context,
+) {
     private var active = false
 
     fun activate() {

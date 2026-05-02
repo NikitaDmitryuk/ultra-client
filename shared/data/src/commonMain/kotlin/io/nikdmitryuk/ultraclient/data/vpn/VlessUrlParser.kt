@@ -5,10 +5,12 @@ import io.nikdmitryuk.ultraclient.domain.model.VpnProfile
 import io.nikdmitryuk.ultraclient.domain.parser.VpnUrlParser
 import kotlin.random.Random
 
-class VlessParseException(message: String, cause: Throwable? = null) : Exception(message, cause)
+class VlessParseException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
 
 class VlessUrlParser : VpnUrlParser {
-
     override fun canHandle(url: String): Boolean = url.startsWith("vless://")
 
     override fun parse(rawUrl: String): VpnProfile {
@@ -20,7 +22,7 @@ class VlessUrlParser : VpnUrlParser {
             rawUrl = rawUrl,
             config = config,
             isActive = false,
-            createdAt = currentTimeMillis()
+            createdAt = currentTimeMillis(),
         )
     }
 
@@ -48,8 +50,9 @@ class VlessUrlParser : VpnUrlParser {
         if (colonIdx < 0) throw VlessParseException("Missing port in VLESS URL")
 
         val host = hostPort.substring(0, colonIdx)
-        val port = hostPort.substring(colonIdx + 1).toIntOrNull()
-            ?: throw VlessParseException("Invalid port value in VLESS URL")
+        val port =
+            hostPort.substring(colonIdx + 1).toIntOrNull()
+                ?: throw VlessParseException("Invalid port value in VLESS URL")
 
         val params = parseQueryParams(query)
 
@@ -69,7 +72,7 @@ class VlessUrlParser : VpnUrlParser {
             alpn = params["alpn"] ?: "",
             wsPath = params["path"]?.let { urlDecode(it) } ?: "",
             wsHost = params["host"] ?: "",
-            grpcServiceName = params["serviceName"] ?: ""
+            grpcServiceName = params["serviceName"] ?: "",
         )
     }
 
@@ -80,7 +83,8 @@ class VlessUrlParser : VpnUrlParser {
 
     private fun parseQueryParams(query: String): Map<String, String> {
         if (query.isEmpty()) return emptyMap()
-        return query.split("&")
+        return query
+            .split("&")
             .filter { it.contains("=") }
             .associate { param ->
                 val eq = param.indexOf('=')
@@ -92,11 +96,15 @@ class VlessUrlParser : VpnUrlParser {
         encoded
             .replace("+", " ")
             .replace(Regex("%([0-9A-Fa-f]{2})")) { mr ->
-                mr.groupValues[1].toInt(16).toChar().toString()
+                mr.groupValues[1]
+                    .toInt(16)
+                    .toChar()
+                    .toString()
             }
 
     private fun generateUuid(): String {
         val chars = "abcdef0123456789"
+
         fun seg(len: Int) = (1..len).map { chars[Random.nextInt(chars.length)] }.joinToString("")
         return "${seg(8)}-${seg(4)}-${seg(4)}-${seg(4)}-${seg(12)}"
     }

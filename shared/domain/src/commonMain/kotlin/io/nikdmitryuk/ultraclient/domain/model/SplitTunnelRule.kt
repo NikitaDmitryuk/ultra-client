@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class SplitTunnelRule(
     val appId: String,
     val appName: String,
-    val isExcluded: Boolean
+    val isExcluded: Boolean,
 )

@@ -6,9 +6,8 @@ import io.nikdmitryuk.ultraclient.domain.repository.VpnProfileRepository
 import kotlinx.coroutines.flow.Flow
 
 class VpnProfileRepositoryImpl(
-    private val dataSource: VpnProfileLocalDataSource
+    private val dataSource: VpnProfileLocalDataSource,
 ) : VpnProfileRepository {
-
     override fun observeAll(): Flow<List<VpnProfile>> = dataSource.observeAll()
 
     override suspend fun getById(id: String): VpnProfile? = dataSource.getById(id)

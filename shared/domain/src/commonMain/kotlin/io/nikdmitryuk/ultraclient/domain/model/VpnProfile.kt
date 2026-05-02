@@ -9,5 +9,5 @@ data class VpnProfile(
     val rawUrl: String,
     val config: VlessConfig,
     val isActive: Boolean = false,
-    val createdAt: Long
+    val createdAt: Long,
 )

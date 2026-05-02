@@ -39,7 +39,6 @@ import io.nikdmitryuk.ultraclient.presentation.screen.profiles.ProfilesScreen
 import io.nikdmitryuk.ultraclient.presentation.screen.settings.SettingsScreen
 
 class HomeScreen : Screen {
-
     @Composable
     override fun Content() {
         val model = getScreenModel<HomeScreenModel>()
@@ -56,20 +55,21 @@ class HomeScreen : Screen {
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
         ) { padding ->
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = "ultra-client",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(8.dp))
                 VpnStatusIndicator(state = state.vpnState)
@@ -77,31 +77,32 @@ class HomeScreen : Screen {
                     Spacer(Modifier.height(16.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+                            ),
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.Top
+                            verticalAlignment = Alignment.Top,
                         ) {
                             Icon(
                                 Icons.Filled.Warning,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                             Spacer(Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     "No split-tunnel rules configured",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
                                 )
                                 Text(
                                     "All apps are routed through VPN. Go to Settings to choose which apps bypass the tunnel.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
                                 )
                                 TextButton(onClick = { navigator.push(SettingsScreen()) }) {
                                     Text("Configure", style = MaterialTheme.typography.labelSmall)
@@ -113,19 +114,19 @@ class HomeScreen : Screen {
                 Spacer(Modifier.height(48.dp))
                 PowerButton(
                     state = state.vpnState,
-                    onClick = { model.toggleVpn() }
+                    onClick = { model.toggleVpn() },
                 )
                 Spacer(Modifier.height(32.dp))
                 state.activeProfile?.let { profile ->
                     Text(
                         text = profile.name,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } ?: Text(
                     text = "No profile selected",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(16.dp))
                 TextButton(onClick = { navigator.push(ProfilesScreen()) }) {

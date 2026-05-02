@@ -6,9 +6,8 @@ import io.nikdmitryuk.ultraclient.domain.repository.AntiDetectRepository
 import kotlinx.coroutines.flow.Flow
 
 class AntiDetectRepositoryImpl(
-    private val dataSource: AntiDetectLocalDataSource
+    private val dataSource: AntiDetectLocalDataSource,
 ) : AntiDetectRepository {
-
     override fun observe(): Flow<AntiDetectConfig> = dataSource.observe()
 
     override suspend fun get(): AntiDetectConfig = dataSource.get()

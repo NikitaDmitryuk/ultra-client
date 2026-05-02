@@ -5,31 +5,32 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class VpnProfileSerializationTest {
-
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val sampleConfig = VlessConfig(
-        uuid = "123e4567-e89b-12d3-a456-426614174000",
-        address = "example.com",
-        port = 443,
-        encryption = "none",
-        flow = "xtls-rprx-vision",
-        security = "reality",
-        network = "tcp",
-        realityPublicKey = "ABC123pubkey",
-        realityShortId = "deadbeef",
-        sni = "www.example.com",
-        fingerprint = "chrome"
-    )
+    private val sampleConfig =
+        VlessConfig(
+            uuid = "123e4567-e89b-12d3-a456-426614174000",
+            address = "example.com",
+            port = 443,
+            encryption = "none",
+            flow = "xtls-rprx-vision",
+            security = "reality",
+            network = "tcp",
+            realityPublicKey = "ABC123pubkey",
+            realityShortId = "deadbeef",
+            sni = "www.example.com",
+            fingerprint = "chrome",
+        )
 
-    private val sampleProfile = VpnProfile(
-        id = "test-id-001",
-        name = "My Server",
-        rawUrl = "vless://test@example.com:443",
-        config = sampleConfig,
-        isActive = true,
-        createdAt = 1700000000000L
-    )
+    private val sampleProfile =
+        VpnProfile(
+            id = "test-id-001",
+            name = "My Server",
+            rawUrl = "vless://test@example.com:443",
+            config = sampleConfig,
+            isActive = true,
+            createdAt = 1700000000000L,
+        )
 
     @Test
     fun vpnProfileRoundTrip() {
@@ -58,7 +59,9 @@ class VpnProfileSerializationTest {
 
     @Test
     fun vpnProfileIsActiveDefaultsFalse() {
-        val profileJson = """{"id":"x","name":"n","rawUrl":"r","config":{"uuid":"u","address":"a","port":80,"security":"none"},"createdAt":0}"""
+        val profileJson =
+            """{"id":"x","name":"n","rawUrl":"r","config":""" +
+            """{"uuid":"u","address":"a","port":80,"security":"none"},"createdAt":0}"""
         val decoded = json.decodeFromString(VpnProfile.serializer(), profileJson)
         assertEquals(false, decoded.isActive)
     }

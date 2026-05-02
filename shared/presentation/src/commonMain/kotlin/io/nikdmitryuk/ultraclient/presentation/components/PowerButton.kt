@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.nikdmitryuk.ultraclient.domain.model.VpnState
 import io.nikdmitryuk.ultraclient.presentation.theme.UltraConnected
@@ -26,14 +25,15 @@ import io.nikdmitryuk.ultraclient.presentation.theme.UltraError
 fun PowerButton(
     state: VpnState,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val targetColor = when (state) {
-        is VpnState.Connected -> UltraConnected
-        is VpnState.Connecting -> UltraConnecting
-        is VpnState.Error -> UltraError
-        VpnState.Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val targetColor =
+        when (state) {
+            is VpnState.Connected -> UltraConnected
+            is VpnState.Connecting -> UltraConnecting
+            is VpnState.Error -> UltraError
+            VpnState.Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
     val color by animateColorAsState(targetColor, tween(400), label = "btn_color")
     val isLoading = state is VpnState.Connecting
 
@@ -42,21 +42,22 @@ fun PowerButton(
             CircularProgressIndicator(
                 color = color,
                 strokeWidth = 3.dp,
-                modifier = Modifier.size(120.dp)
+                modifier = Modifier.size(120.dp),
             )
         }
         IconButton(
             onClick = { if (!isLoading) onClick() },
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .border(2.dp, color, CircleShape)
+            modifier =
+                Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, color, CircleShape),
         ) {
             Icon(
                 imageVector = androidx.compose.material.icons.Icons.Filled.Power,
                 contentDescription = "Toggle VPN",
                 tint = color,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
         }
     }

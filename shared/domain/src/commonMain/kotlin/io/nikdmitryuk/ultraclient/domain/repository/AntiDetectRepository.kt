@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface AntiDetectRepository {
     fun observe(): Flow<AntiDetectConfig>
+
     suspend fun get(): AntiDetectConfig
+
     suspend fun update(config: AntiDetectConfig)
 }

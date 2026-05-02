@@ -8,28 +8,29 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class XrayConfigBuilderTest {
-
     private val builder = XrayConfigBuilder()
 
-    private val realityConfig = VlessConfig(
-        uuid = "123e4567-e89b-12d3-a456-426614174000",
-        address = "example.com",
-        port = 443,
-        security = "reality",
-        realityPublicKey = "PUBKEY",
-        realityShortId = "SHORTID",
-        sni = "www.example.com",
-        fingerprint = "chrome",
-        flow = "xtls-rprx-vision"
-    )
+    private val realityConfig =
+        VlessConfig(
+            uuid = "123e4567-e89b-12d3-a456-426614174000",
+            address = "example.com",
+            port = 443,
+            security = "reality",
+            realityPublicKey = "PUBKEY",
+            realityShortId = "SHORTID",
+            sni = "www.example.com",
+            fingerprint = "chrome",
+            flow = "xtls-rprx-vision",
+        )
 
-    private val tlsConfig = VlessConfig(
-        uuid = "aaaabbbb-cccc-dddd-eeee-ffffffffffff",
-        address = "tls.example.com",
-        port = 8443,
-        security = "tls",
-        sni = "tls.example.com"
-    )
+    private val tlsConfig =
+        VlessConfig(
+            uuid = "aaaabbbb-cccc-dddd-eeee-ffffffffffff",
+            address = "tls.example.com",
+            port = 8443,
+            security = "tls",
+            sni = "tls.example.com",
+        )
 
     private val antiDetectWithFakeDns = AntiDetectConfig(fakeDnsEnabled = true)
     private val antiDetectPlainDns = AntiDetectConfig(fakeDnsEnabled = false)

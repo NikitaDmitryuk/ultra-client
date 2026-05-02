@@ -4,6 +4,7 @@ import kotlin.random.Random
 
 class PortRandomizer {
     fun randomSocksPort(): Int = randomAvailablePort()
+
     fun randomDnsPort(): Int = randomAvailablePort()
 
     private fun randomAvailablePort(): Int {
@@ -17,8 +18,15 @@ class PortRandomizer {
     private fun isPortAvailable(port: Int): Boolean = port !in RESERVED_PORTS
 
     companion object {
-        private val RESERVED_PORTS = setOf(
-            10808, 1080, 8080, 8443, 7890, 7891, 7892
-        )
+        private val RESERVED_PORTS =
+            setOf(
+                10808,
+                1080,
+                8080,
+                8443,
+                7890,
+                7891,
+                7892,
+            )
     }
 }

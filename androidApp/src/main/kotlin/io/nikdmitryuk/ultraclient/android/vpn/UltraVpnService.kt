@@ -10,9 +10,9 @@ import android.os.ParcelFileDescriptor
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import io.nikdmitryuk.ultraclient.android.MainActivity
+import io.nikdmitryuk.ultraclient.data.antidetect.PortRandomizer
 import io.nikdmitryuk.ultraclient.data.vpn.VpnStateHolder
 import io.nikdmitryuk.ultraclient.data.vpn.XrayConfigBuilder
-import io.nikdmitryuk.ultraclient.data.antidetect.PortRandomizer
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
 import io.nikdmitryuk.ultraclient.domain.model.VlessConfig
 import io.nikdmitryuk.ultraclient.domain.model.VpnState
@@ -25,7 +25,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 class UltraVpnService : VpnService() {
-
     companion object {
         const val ACTION_CONNECT = "io.nikdmitryuk.ultraclient.ACTION_CONNECT"
         const val ACTION_DISCONNECT = "io.nikdmitryuk.ultraclient.ACTION_DISCONNECT"
@@ -48,7 +47,11 @@ class UltraVpnService : VpnService() {
         acquireWakeLock()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         when (intent?.action) {
             ACTION_CONNECT -> {
                 val vlessJson = intent.getStringExtra(EXTRA_VLESS_CONFIG) ?: return START_NOT_STICKY
@@ -79,7 +82,10 @@ class UltraVpnService : VpnService() {
         wakeLock?.release()
     }
 
-    private fun startTunnel(vlessConfig: VlessConfig, antiDetect: AntiDetectConfig) {
+    private fun startTunnel(
+        vlessConfig: VlessConfig,
+        antiDetect: AntiDetectConfig,
+    ) {
         val portRandomizer = PortRandomizer()
         val socksPort = if (antiDetect.randomPortEnabled) portRandomizer.randomSocksPort() else 10808
         val dnsPort = if (antiDetect.randomPortEnabled) portRandomizer.randomDnsPort() else 10853
@@ -143,29 +149,36 @@ class UltraVpnService : VpnService() {
 
     private fun acquireWakeLock() {
         val pm = getSystemService(POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK,
-            "ultra-client:VpnWakeLock"
-        ).also { it.acquire(24 * 60 * 60 * 1000L) }
+        wakeLock =
+            pm
+                .newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "ultra-client:VpnWakeLock",
+                ).also { it.acquire(24 * 60 * 60 * 1000L) }
     }
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "VPN Status",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply { description = "Shows VPN connection status" }
+        val channel =
+            NotificationChannel(
+                CHANNEL_ID,
+                "VPN Status",
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply { description = "Shows VPN connection status" }
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(channel)
     }
 
     private fun buildNotification(): Notification {
         val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val pendingIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        return NotificationCompat
+            .Builder(this, CHANNEL_ID)
             .setContentTitle("ultra-client")
             .setContentText("VPN connected")
             .setSmallIcon(android.R.drawable.ic_dialog_info)

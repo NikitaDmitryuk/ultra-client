@@ -8,7 +8,13 @@ import kotlinx.coroutines.flow.Flow
 
 expect class PlatformVpnEngine : VpnEngine {
     override val state: Flow<VpnState>
-    override suspend fun connect(config: VlessConfig, antiDetect: AntiDetectConfig): Result<Unit>
+
+    override suspend fun connect(
+        config: VlessConfig,
+        antiDetect: AntiDetectConfig,
+    ): Result<Unit>
+
     override suspend fun disconnect(): Result<Unit>
+
     override fun isConnected(): Boolean
 }
