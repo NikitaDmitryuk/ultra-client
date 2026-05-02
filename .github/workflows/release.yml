@@ -97,8 +97,7 @@ jobs:
             -sdk iphonesimulator \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
-            -derivedDataPath $RUNNER_TEMP/derivedData \
-            2>&1 | tail -20
+            -derivedDataPath $RUNNER_TEMP/derivedData
 
       - name: Package simulator app
         if: steps.signing.outputs.configured == 'false'
@@ -149,4 +148,4 @@ jobs:
         with:
           name: ios-ipa-${{ github.ref_name }}
           path: ${{ runner.temp }}/ipa/
-          if-no-files-found: warn
+          if-no-files-found: error

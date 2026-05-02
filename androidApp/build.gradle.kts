@@ -37,6 +37,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 dependencies {
     implementation(project(":shared:domain"))
     implementation(project(":shared:data"))
@@ -45,6 +51,7 @@ dependencies {
     implementation(libs.android.activity.compose)
     implementation(libs.koin.android)
     implementation(libs.coroutines.android)
+    implementation(libs.serialization.json)
     implementation(libs.androidx.core.ktx)
 
     val xrayAar = file("libs/XrayCore.aar")
