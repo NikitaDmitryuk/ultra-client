@@ -1,6 +1,6 @@
 [versions]
 kotlin              = "2.3.21"
-agp                 = "8.7.3"
+agp                 = "8.13.2"
 compose             = "1.10.3"
 koin                = "4.1.1"
 sqldelight          = "2.3.2"
