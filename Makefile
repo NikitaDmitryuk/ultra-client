@@ -20,6 +20,7 @@ clean:
 	./gradlew clean
 	rm -f ktlint
 
+# Сборка AAR: ANDROID_HOME/ANDROID_NDK_HOME подставляются в xray-build/build-android.sh при стандартном SDK.
 xray-android:
 	bash xray-build/build-android.sh
 	mkdir -p androidApp/libs

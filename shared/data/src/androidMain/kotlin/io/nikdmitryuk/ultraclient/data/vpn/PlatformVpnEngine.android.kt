@@ -20,6 +20,11 @@ actual class PlatformVpnEngine(
         antiDetect: AntiDetectConfig,
     ): Result<Unit> =
         runCatching {
+            if (antiDetect.vpnIncludedApps.none { it.throughVpn } &&
+                antiDetect.legacyBypassAppIds.isEmpty()
+            ) {
+                error("Select at least one app to route through the VPN in Settings")
+            }
             VpnStateHolder.emit(VpnState.Connecting)
             val intent = Intent(context, Class.forName("io.nikdmitryuk.ultraclient.android.vpn.UltraVpnService"))
             intent.action = "io.nikdmitryuk.ultraclient.ACTION_CONNECT"

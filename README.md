@@ -12,7 +12,7 @@ A Kotlin Multiplatform (KMP) mobile client for the [VLESS](https://xtls.github.i
 - **Kill Switch** — blocks all traffic if the tunnel drops unexpectedly
 - **Fake DNS** — all DNS queries are resolved inside the tunnel, eliminating leaks
 - **Random local ports** — local SOCKS and DNS ports are randomised on every connection
-- **Split routing** — per-app routing rules (Android); chosen apps connect directly
+- **Per-app VPN (Android)** — you choose which apps use the tunnel (`addAllowedApplication`); the rest use the normal connection
 - **Shared UI** — Compose Multiplatform UI, single codebase for both platforms
 - **Offline-first** — profiles and settings stored locally with SQLDelight
 
@@ -88,11 +88,11 @@ ProfilesScreen → "Paste" → ProfilesScreenModel.importFromClipboard()
 
 Pure Kotlin — no Android, no Compose, no platform dependencies.
 
-**Models:** `VpnProfile`, `VlessConfig`, `TunnelState`, `SplitTunnelRule`, `AntiDetectConfig`
+**Models:** `VpnProfile`, `VlessConfig`, `TunnelState`, `VpnAppRouteRule`, `AntiDetectConfig`
 
 **Repositories (interfaces):** `VpnProfileRepository`, `AntiDetectRepository`
 
-**Use cases:** `ConnectVpnUseCase`, `DisconnectVpnUseCase`, `ImportProfileUseCase`, `GetTunnelStateUseCase`, `GetProfilesUseCase`, `DeleteProfileUseCase`, `SetActiveProfileUseCase`, `UpdateSplitTunnelUseCase`, `UpdateAntiDetectUseCase`
+**Use cases:** `ConnectVpnUseCase`, `DisconnectVpnUseCase`, `ImportProfileUseCase`, `GetTunnelStateUseCase`, `GetProfilesUseCase`, `DeleteProfileUseCase`, `SetActiveProfileUseCase`, `UpdateVpnIncludedAppsUseCase`, `UpdateAntiDetectUseCase`
 
 ### shared:data
 
@@ -107,7 +107,7 @@ Pure Kotlin — no Android, no Compose, no platform dependencies.
 vpn_profiles (id, name, raw_url, config_json, is_active, created_at)
 
 -- singleton anti-detect settings
-anti_detect_config (kill_switch_enabled, fake_dns_enabled, random_port_enabled, split_tunnel_json)
+anti_detect_config (kill_switch_enabled, fake_dns_enabled, random_port_enabled, split_tunnel_json — JSON `VpnAppRouteRule[]` with `throughVpn`, legacy rows used `isExcluded` / bypass list)
 ```
 
 **Platform actuals:**
@@ -125,9 +125,9 @@ Three Voyager screens:
 
 | Screen | Purpose |
 |---|---|
-| `HomeScreen` | Connection toggle, status indicator, active profile, split-tunnel warning |
+| `HomeScreen` | Connection toggle, status indicator, active profile |
 | `ProfilesScreen` | Profile list, paste-from-clipboard import, swipe-to-delete |
-| `SettingsScreen` | Kill Switch, Fake DNS, Random Ports, per-app routing (Android) |
+| `SettingsScreen` | Kill Switch, Fake DNS, Random Ports, choose apps that use VPN (Android) |
 
 ### androidApp
 
@@ -135,7 +135,7 @@ Three Voyager screens:
 - `TunConfigurator` — `VpnService.Builder` setup: address `10.0.0.1/32`, default routes, DNS, MTU 1500
 - `XrayBridge` — reflection-based bridge to `XrayCore.aar` (gomobile output)
 - `KillSwitchManager` — re-establishes TUN with no routes to block all traffic
-- `SplitTunnelHelper` — calls `addDisallowedApplication()` per rule
+- Per-app VPN — `TunConfigurator` calls `addAllowedApplication()` for each app marked for the tunnel (`VpnAppRouteRule`)
 
 ### iOS (Xcode)
 

@@ -3,16 +3,26 @@ package io.nikdmitryuk.ultraclient.data.vpn
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
 import io.nikdmitryuk.ultraclient.domain.model.VlessConfig
 
+/**
+ * Генерация JSON для Xray. Диагностика allow-list / DNS:
+ * - **Fake DNS off** — в настройках AntiDetect выключить fake DNS и сравнить поведение отмеченных приложений.
+ * - **initDns** — в `androidApp/build.gradle.kts` поле `LIBXRAY_SKIP_INIT_DNS` (пропуск вызова `libXray.initDns`).
+ */
 class XrayConfigBuilder {
+    /**
+     * @param _localDnsPort reserved for a future dedicated DNS inbound; currently unused in generated JSON (TUN + LibXray handle DNS).
+     * @param xrayErrorLogPath when non-null (e.g. debug), Xray writes internal errors to this file and loglevel is raised to debug.
+     */
     fun build(
         vlessConfig: VlessConfig,
         antiDetect: AntiDetectConfig,
         localSocksPort: Int,
-        localDnsPort: Int,
+        @Suppress("UNUSED_PARAMETER") _localDnsPort: Int,
+        xrayErrorLogPath: String? = null,
     ): String =
         buildString {
             appendLine("{")
-            appendLine("""  "log": { "loglevel": "warning", "access": "", "error": "" },""")
+            appendLine(buildLogBlock(xrayErrorLogPath))
 
             if (antiDetect.fakeDnsEnabled) {
                 appendLine(buildFakeDns())
@@ -41,6 +51,13 @@ class XrayConfigBuilder {
             appendLine(buildRouting(antiDetect.fakeDnsEnabled))
             append("}")
         }
+
+    private fun buildLogBlock(errorLogPath: String?): String {
+        val level = if (errorLogPath != null) "debug" else "warning"
+        val errorValue =
+            errorLogPath?.replace("\\", "\\\\")?.replace("\"", "\\\"") ?: ""
+        return """  "log": { "loglevel": "$level", "access": "", "error": "$errorValue" },"""
+    }
 
     private fun buildFakeDns() =
         """

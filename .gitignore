@@ -29,6 +29,7 @@ replay_pid*
 .idea/
 .claude/
 .gradle/
+.vscode/
 
 # Gradle build outputs
 build/
@@ -48,3 +49,4 @@ local.properties
 
 # ktlint binary (downloaded by make setup)
 ktlint
+log.txt

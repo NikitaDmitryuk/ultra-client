@@ -47,8 +47,10 @@
 # --- XrayCore AAR (libXray gomobile output) ---
 -keep class io.xtls.libxray.** { *; }
 -keep class libxray.** { *; }
+-keep class libXray.** { *; }
 -dontwarn io.xtls.libxray.**
 -dontwarn libxray.**
+-dontwarn libXray.**
 -keepclasseswithmembernames class * { native <methods>; }
 
 # --- Android VPN Service ---

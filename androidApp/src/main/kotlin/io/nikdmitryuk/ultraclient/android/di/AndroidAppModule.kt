@@ -8,7 +8,7 @@ import io.nikdmitryuk.ultraclient.domain.usecase.GetVpnStateUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.ImportProfileUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.SetActiveProfileUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.UpdateAntiDetectUseCase
-import io.nikdmitryuk.ultraclient.domain.usecase.UpdateSplitTunnelUseCase
+import io.nikdmitryuk.ultraclient.domain.usecase.UpdateVpnIncludedAppsUseCase
 import io.nikdmitryuk.ultraclient.presentation.platform.AndroidClipboardReader
 import io.nikdmitryuk.ultraclient.presentation.platform.AndroidInstalledAppsProvider
 import io.nikdmitryuk.ultraclient.presentation.platform.ClipboardReader
@@ -27,6 +27,6 @@ val androidAppModule =
         factory { GetProfilesUseCase(get()) }
         factory { DeleteProfileUseCase(get()) }
         factory { SetActiveProfileUseCase(get()) }
-        factory { UpdateSplitTunnelUseCase(get()) }
+        factory { UpdateVpnIncludedAppsUseCase(get()) }
         factory { UpdateAntiDetectUseCase(get()) }
     }

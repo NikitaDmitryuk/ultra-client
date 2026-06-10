@@ -49,7 +49,6 @@ class XrayConfigBuilderTest {
     fun fakeDnsEnabledInjectsFakeDnsBlock() {
         val json = builder.build(realityConfig, antiDetectWithFakeDns, 18492, 5353)
         assertContains(json, "fakedns")
-        assertContains(json, "dns-in")
         assertContains(json, "dns-out")
         assertContains(json, "198.18.0")
     }
@@ -58,7 +57,7 @@ class XrayConfigBuilderTest {
     fun fakeDnsDisabledOmitsFakeDnsBlock() {
         val json = builder.build(realityConfig, antiDetectPlainDns, 18492, 5353)
         assertFalse(json.contains("fakedns"), "Should not contain fakedns when disabled")
-        assertFalse(json.contains("dns-in"), "Should not contain dns-in inbound when disabled")
+        assertFalse(json.contains("dns-out"), "Should not route port 53 to dns-out when fake DNS is disabled")
     }
 
     @Test
@@ -96,5 +95,19 @@ class XrayConfigBuilderTest {
         val json = builder.build(realityConfig, antiDetectPlainDns, 18492, 5353)
         assertTrue(json.trim().startsWith("{"))
         assertTrue(json.trim().endsWith("}"))
+    }
+
+    @Test
+    fun errorLogPathSetsDebugLevelAndEscapedPath() {
+        val json =
+            builder.build(
+                realityConfig,
+                antiDetectPlainDns,
+                18492,
+                5353,
+                "/data/local/tmp/xray-error.log",
+            )
+        assertContains(json, "\"loglevel\": \"debug\"")
+        assertContains(json, "xray-error.log")
     }
 }

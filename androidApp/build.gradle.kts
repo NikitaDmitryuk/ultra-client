@@ -7,12 +7,17 @@ plugins {
 android {
     namespace = "io.nikdmitryuk.ultraclient.android"
     compileSdk = 35
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId = "io.nikdmitryuk.ultraclient"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+        // A/B: при подозрении на конфликт Go resolver и системного DNS выставить true и пересобрать.
+        buildConfigField("boolean", "LIBXRAY_SKIP_INIT_DNS", "false")
     }
     buildTypes {
         release {

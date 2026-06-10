@@ -4,11 +4,11 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import io.nikdmitryuk.ultraclient.domain.model.VpnProfile
 import io.nikdmitryuk.ultraclient.domain.model.VpnState
-import io.nikdmitryuk.ultraclient.domain.repository.AntiDetectRepository
 import io.nikdmitryuk.ultraclient.domain.usecase.ConnectVpnUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.DisconnectVpnUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.GetProfilesUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.GetVpnStateUseCase
+import io.nikdmitryuk.ultraclient.presentation.platform.measureDnsResolveMs
 import io.nikdmitryuk.ultraclient.presentation.platform.measurePingMs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,8 +24,8 @@ data class HomeUiState(
     val activeProfile: VpnProfile? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val showSplitTunnelWarning: Boolean = false,
     val pingLatencyMs: Long? = null,
+    val dnsResolveLatencyMs: Long? = null,
 )
 
 class HomeScreenModel(
@@ -33,7 +33,6 @@ class HomeScreenModel(
     private val disconnectVpnUseCase: DisconnectVpnUseCase,
     private val getVpnStateUseCase: GetVpnStateUseCase,
     private val getProfilesUseCase: GetProfilesUseCase,
-    private val antiDetectRepository: AntiDetectRepository,
 ) : ScreenModel {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -45,15 +44,13 @@ class HomeScreenModel(
             combine(
                 getVpnStateUseCase(),
                 getProfilesUseCase(),
-                antiDetectRepository.observe(),
-            ) { state, profiles, antiDetect ->
-                Triple(state, profiles.firstOrNull { it.isActive }, antiDetect.splitTunnelRules.isEmpty())
-            }.collect { (state, active, noRules) ->
+            ) { state, profiles ->
+                Pair(state, profiles.firstOrNull { it.isActive })
+            }.collect { (state, active) ->
                 _uiState.update { current ->
                     current.copy(
                         vpnState = state,
                         activeProfile = active,
-                        showSplitTunnelWarning = noRules,
                         errorMessage = if (state is VpnState.Error && current.vpnState !is VpnState.Error) {
                             state.message
                         } else {
@@ -66,7 +63,7 @@ class HomeScreenModel(
                 } else {
                     pingJob?.cancel()
                     pingJob = null
-                    _uiState.update { it.copy(pingLatencyMs = null) }
+                    _uiState.update { it.copy(pingLatencyMs = null, dnsResolveLatencyMs = null) }
                 }
             }
         }
@@ -75,7 +72,11 @@ class HomeScreenModel(
     private fun startPingLoop() {
         pingJob = screenModelScope.launch {
             while (true) {
-                _uiState.update { it.copy(pingLatencyMs = measurePingMs()) }
+                val tcp = measurePingMs()
+                val dns = measureDnsResolveMs()
+                _uiState.update {
+                    it.copy(pingLatencyMs = tcp, dnsResolveLatencyMs = dns)
+                }
                 delay(5_000)
             }
         }

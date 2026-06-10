@@ -25,3 +25,20 @@ actual suspend fun measurePingMs(): Long? = suspendCancellableCoroutine { cont -
     task.resume()
     cont.invokeOnCancellation { task.cancel() }
 }
+
+/** Hostname path (DNS + TLS handshake); compares with plain IP [measurePingMs]. */
+actual suspend fun measureDnsResolveMs(): Long? = suspendCancellableCoroutine { cont ->
+    val url = NSURL.URLWithString("https://one.one.one.one/") ?: run { cont.resume(null); return@suspendCancellableCoroutine }
+    val request = NSMutableURLRequest.requestWithURL(url).apply {
+        setHTTPMethod("HEAD")
+        setTimeoutInterval(3.0)
+        setCachePolicy(NSURLRequestReloadIgnoringLocalAndRemoteCacheData)
+    }
+    val start = NSDate.timeIntervalSinceReferenceDate()
+    val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { _, _, _ ->
+        val elapsed = ((NSDate.timeIntervalSinceReferenceDate() - start) * 1000).toLong()
+        cont.resume(elapsed.takeIf { it > 0 })
+    }
+    task.resume()
+    cont.invokeOnCancellation { task.cancel() }
+}
