@@ -98,7 +98,7 @@ object XrayBridge {
                 if (BuildConfig.DEBUG && n <= 8) {
                     Log.d(
                         TAG,
-                        "DialerCallback #${n} ${method.name}(${args?.joinToString()}) retType=${method.returnType.simpleName}",
+                        "DialerCallback #$n ${method.name}(${args?.joinToString()}) retType=${method.returnType.simpleName}",
                     )
                 }
                 if (!method.name.equals("protectFd", ignoreCase = true)) {
@@ -159,7 +159,7 @@ object XrayBridge {
                 ) {
                     Log.d(
                         TAG,
-                        "LibXray.${name}(${m.parameterTypes.joinToString { it.simpleName }})",
+                        "LibXray.$name(${m.parameterTypes.joinToString { it.simpleName }})",
                     )
                 }
             }
@@ -302,6 +302,7 @@ object XrayBridge {
         datDir: String,
         configPath: String,
         mphCachePath: String = "",
+        tunFd: Int? = null,
     ): String? {
         val lib = libxrayClass ?: return "XrayCore library not found"
         val test =
@@ -326,6 +327,9 @@ object XrayBridge {
                 Base64.NO_WRAP,
             )
         return try {
+            if (tunFd != null) {
+                lib.getMethod("setTunFd", Int::class.java).invoke(null, tunFd)
+            }
             val base64Response = test.invoke(null, base64Req) as? String ?: return "empty TestXray response"
             decodeError(base64Response)
         } catch (e: Exception) {

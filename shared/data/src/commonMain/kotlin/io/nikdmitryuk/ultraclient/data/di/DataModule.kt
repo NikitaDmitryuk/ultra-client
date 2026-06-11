@@ -1,6 +1,5 @@
 package io.nikdmitryuk.ultraclient.data.di
 
-import io.nikdmitryuk.ultraclient.data.antidetect.PortRandomizer
 import io.nikdmitryuk.ultraclient.data.local.AntiDetectLocalDataSource
 import io.nikdmitryuk.ultraclient.data.local.DatabaseDriverFactory
 import io.nikdmitryuk.ultraclient.data.local.VpnProfileLocalDataSource
@@ -24,7 +23,6 @@ val dataModule =
         single<AntiDetectRepository> { AntiDetectRepositoryImpl(get()) }
         single<VpnUrlParser> { VlessUrlParser() }
         single { XrayConfigBuilder() }
-        single { PortRandomizer() }
     }
 
 expect val platformDataModule: Module

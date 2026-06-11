@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class AntiDetectConfig(
     val killSwitchEnabled: Boolean = false,
     val fakeDnsEnabled: Boolean = true,
-    val randomPortEnabled: Boolean = true,
+    val randomPortEnabled: Boolean = false,
     /**
      * Apps that use the VPN tunnel. Stored in DB as JSON (only entries with [VpnAppRouteRule.throughVpn] == true).
      * When non-empty, [android.net.VpnService.Builder.addAllowedApplication] is used per entry.

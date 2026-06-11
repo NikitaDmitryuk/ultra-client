@@ -54,17 +54,33 @@ class XrayConfigBuilderTest {
     }
 
     @Test
-    fun fakeDnsDisabledOmitsFakeDnsBlock() {
+    fun defaultConfigKeepsFakeDnsEnabled() {
+        val json = builder.build(realityConfig, AntiDetectConfig(), 18492, 5353)
+        assertContains(json, "fakedns")
+        assertContains(json, "dns-out")
+    }
+
+    @Test
+    fun legacyPlainDnsFallbackOmitsFakeDnsBlock() {
         val json = builder.build(realityConfig, antiDetectPlainDns, 18492, 5353)
         assertFalse(json.contains("fakedns"), "Should not contain fakedns when disabled")
         assertFalse(json.contains("dns-out"), "Should not route port 53 to dns-out when fake DNS is disabled")
     }
 
     @Test
-    fun socksPortAppearsInOutput() {
-        val port = 23456
-        val json = builder.build(realityConfig, antiDetectPlainDns, port, 5353)
-        assertContains(json, "\"port\": $port")
+    fun androidVpnModeUsesTunInbound() {
+        val json = builder.build(realityConfig, antiDetectPlainDns, 23456, 5353)
+        assertContains(json, "\"tag\": \"tun-in\"")
+        assertContains(json, "\"protocol\": \"tun\"")
+        assertContains(json, "\"MTU\": 1500")
+        assertFalse(json.contains("\"protocol\": \"socks\""), "Android VPN mode should not use a SOCKS-only inbound")
+    }
+
+    @Test
+    fun routingSendsTcpAndUdpToProxyOutbound() {
+        val json = builder.build(realityConfig, antiDetectPlainDns, 18492, 5353)
+        assertContains(json, "\"network\": \"tcp,udp\"")
+        assertContains(json, "\"outboundTag\": \"proxy-out\"")
     }
 
     @Test

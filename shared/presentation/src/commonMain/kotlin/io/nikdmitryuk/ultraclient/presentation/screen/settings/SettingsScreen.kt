@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -31,7 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.koin.getScreenModel
+import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 
@@ -39,7 +38,7 @@ class SettingsScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        val model = getScreenModel<SettingsScreenModel>()
+        val model = koinScreenModel<SettingsScreenModel>()
         val state by model.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
@@ -48,7 +47,7 @@ class SettingsScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Anti-detect settings") },
+                    title = { Text("VPN app routing") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -64,30 +63,11 @@ class SettingsScreen : Screen {
             ) {
                 item {
                     Text(
-                        "Protection",
+                        "Routing",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(vertical = 12.dp),
                     )
-                }
-                item {
-                    ToggleRow(
-                        "Kill Switch",
-                        "Block all traffic if VPN drops",
-                        state.config.killSwitchEnabled,
-                    ) { model.toggleKillSwitch(it) }
-                }
-                item {
-                    ToggleRow(
-                        "Fake DNS",
-                        "Route DNS through tunnel to prevent leaks",
-                        state.config.fakeDnsEnabled,
-                    ) { model.toggleFakeDns(it) }
-                }
-                item {
-                    ToggleRow("Random ports", "Use random local ports to prevent fingerprinting", state.config.randomPortEnabled) {
-                        model.toggleRandomPort(it)
-                    }
                 }
 
                 item {
@@ -161,13 +141,13 @@ private fun ConnectivityHintsCard() {
                 "Allow-listed apps only go through the VPN. Everything else uses your normal connection — it may look “online” while checked apps are not.",
             )
             HintLine(
-                "Try turning off Fake DNS, reconnect, then test again.",
+                "Android apps can detect that their own traffic uses a VPN network. Keep sensitive apps unchecked if they should see your normal IP.",
+            )
+            HintLine(
+                "DNS is handled inside the tunnel automatically. If domains fail but IP addresses work, check Private DNS on the device first.",
             )
             HintLine(
                 "On the device: Settings → Network & Internet → Private DNS → Off or Automatic (wording varies by OEM).",
-            )
-            HintLine(
-                "If something works by IP address but not by domain name, DNS inside the tunnel is failing — adjust Fake DNS / Private DNS first.",
             )
             HintLine(
                 "Home shows TCP to 1.1.1.1 and a hostname check — if TCP works but the name line fails, DNS in the tunnel is the likely issue.",
@@ -197,23 +177,4 @@ private fun HintLine(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 6.dp),
     )
-}
-
-@Composable
-private fun ToggleRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onToggle: (Boolean) -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Switch(checked = checked, onCheckedChange = onToggle)
-    }
 }

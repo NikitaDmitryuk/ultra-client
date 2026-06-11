@@ -1,9 +1,10 @@
 package io.nikdmitryuk.ultraclient.android.vpn
 
 import android.net.VpnService
-import android.util.Log
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
+
 class TunConfigurator(
     private val service: VpnService,
 ) {

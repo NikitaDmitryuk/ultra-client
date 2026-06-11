@@ -4,6 +4,20 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+val releaseVersionName = providers.environmentVariable("ANDROID_VERSION_NAME").orElse("1.0.0")
+val releaseVersionCode =
+    providers
+        .environmentVariable("ANDROID_VERSION_CODE")
+        .map { it.toIntOrNull() ?: 1 }
+        .orElse(1)
+val hasReleaseSigning =
+    listOf(
+        "ANDROID_KEYSTORE_PATH",
+        "ANDROID_KEYSTORE_PASSWORD",
+        "ANDROID_KEY_ALIAS",
+        "ANDROID_KEY_PASSWORD",
+    ).all { !System.getenv(it).isNullOrBlank() }
+
 android {
     namespace = "io.nikdmitryuk.ultraclient.android"
     compileSdk = 35
@@ -14,15 +28,28 @@ android {
         applicationId = "io.nikdmitryuk.ultraclient"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = releaseVersionCode.get()
+        versionName = releaseVersionName.get()
         // A/B: при подозрении на конфликт Go resolver и системного DNS выставить true и пересобрать.
         buildConfigField("boolean", "LIBXRAY_SKIP_INIT_DNS", "false")
+    }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(System.getenv("ANDROID_KEYSTORE_PATH"))
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

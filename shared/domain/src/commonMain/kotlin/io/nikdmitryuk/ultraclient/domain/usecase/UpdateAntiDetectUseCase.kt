@@ -8,6 +8,12 @@ class UpdateAntiDetectUseCase(
 ) {
     suspend operator fun invoke(config: AntiDetectConfig): Result<Unit> =
         runCatching {
-            repository.update(config)
+            repository.update(
+                config.copy(
+                    killSwitchEnabled = false,
+                    fakeDnsEnabled = true,
+                    randomPortEnabled = false,
+                ),
+            )
         }
 }
