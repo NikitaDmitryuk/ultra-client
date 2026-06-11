@@ -28,7 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.koin.getScreenModel
+import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import io.nikdmitryuk.ultraclient.presentation.components.PowerButton
@@ -41,7 +41,7 @@ class HomeScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        val model = getScreenModel<HomeScreenModel>()
+        val model = koinScreenModel<HomeScreenModel>()
         val state by model.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val snackbar = remember { SnackbarHostState() }

@@ -9,10 +9,8 @@ A Kotlin Multiplatform (KMP) mobile client for the [VLESS](https://xtls.github.i
 ## Features
 
 - **VLESS protocol** — Reality, TLS, WebSocket, and gRPC transports
-- **Kill Switch** — blocks all traffic if the tunnel drops unexpectedly
-- **Fake DNS** — all DNS queries are resolved inside the tunnel, eliminating leaks
-- **Random local ports** — local SOCKS and DNS ports are randomised on every connection
 - **Per-app VPN (Android)** — you choose which apps use the tunnel (`addAllowedApplication`); the rest use the normal connection
+- **Tunnel DNS** — DNS is handled inside the Xray TUN path by default
 - **Shared UI** — Compose Multiplatform UI, single codebase for both platforms
 - **Offline-first** — profiles and settings stored locally with SQLDelight
 
@@ -58,7 +56,6 @@ HomeScreen → HomeScreenModel.toggleVpn()
   → ConnectVpnUseCase(profileId)
       ├── VpnProfileRepository.getById()   → SQLDelight
       ├── AntiDetectRepository.get()       → SQLDelight
-      ├── PortRandomizer.randomSocksPort() → random Int
       ├── XrayConfigBuilder.build()        → JSON string
       └── PlatformVpnEngine.connect()
             ↓ Android
@@ -98,7 +95,7 @@ Pure Kotlin — no Android, no Compose, no platform dependencies.
 
 **VLESS URL parser** (`VlessUrlParser`) — parses `vless://uuid@host:port?params#name`, supports all transport and security parameters.
 
-**Xray config builder** (`XrayConfigBuilder`) — generates complete Xray JSON from `VlessConfig` + `AntiDetectConfig` + random ports. Covers Reality, TLS, WS, gRPC stream settings; FakeDNS injection; routing rules.
+**Xray config builder** (`XrayConfigBuilder`) — generates complete Xray JSON from `VlessConfig` + `AntiDetectConfig`. Covers Reality, TLS, WS, gRPC stream settings; TUN inbound; FakeDNS injection; routing rules.
 
 **SQLDelight schema** — two tables:
 
@@ -106,7 +103,7 @@ Pure Kotlin — no Android, no Compose, no platform dependencies.
 -- connection profiles
 vpn_profiles (id, name, raw_url, config_json, is_active, created_at)
 
--- singleton anti-detect settings
+-- singleton routing/DNS compatibility settings
 anti_detect_config (kill_switch_enabled, fake_dns_enabled, random_port_enabled, split_tunnel_json — JSON `VpnAppRouteRule[]` with `throughVpn`, legacy rows used `isExcluded` / bypass list)
 ```
 
@@ -127,14 +124,13 @@ Three Voyager screens:
 |---|---|
 | `HomeScreen` | Connection toggle, status indicator, active profile |
 | `ProfilesScreen` | Profile list, paste-from-clipboard import, swipe-to-delete |
-| `SettingsScreen` | Kill Switch, Fake DNS, Random Ports, choose apps that use VPN (Android) |
+| `SettingsScreen` | Choose apps that use VPN on Android |
 
 ### androidApp
 
 - `UltraVpnService` — `VpnService` subclass; TUN lifecycle; foreground service; Xray watchdog coroutine
 - `TunConfigurator` — `VpnService.Builder` setup: address `10.0.0.1/32`, default routes, DNS, MTU 1500
 - `XrayBridge` — reflection-based bridge to `XrayCore.aar` (gomobile output)
-- `KillSwitchManager` — re-establishes TUN with no routes to block all traffic
 - Per-app VPN — `TunConfigurator` calls `addAllowedApplication()` for each app marked for the tunnel (`VpnAppRouteRule`)
 
 ### iOS (Xcode)
@@ -164,6 +160,18 @@ Config JSON is passed from the main app to the extension at connection time via 
 ```bash
 ./gradlew :androidApp:assembleDebug
 # → androidApp/build/outputs/apk/debug/app-debug.apk
+```
+
+For a signed release APK, provide a keystore via environment variables and run:
+
+```bash
+ANDROID_KEYSTORE_PATH=/path/to/release.keystore \
+ANDROID_KEYSTORE_PASSWORD=... \
+ANDROID_KEY_ALIAS=... \
+ANDROID_KEY_PASSWORD=... \
+ANDROID_VERSION_NAME=1.2.3 \
+ANDROID_VERSION_CODE=123 \
+./gradlew :androidApp:assembleRelease
 ```
 
 ### iOS XCFramework + Xcode build
@@ -212,6 +220,12 @@ make clean    # clean Gradle build + remove ktlint binary
 ./gradlew :shared:data:jvmTest     # 18 parser + config builder tests
 ```
 
+### Repository hygiene
+
+Commit source code, Gradle files, GitHub workflows, SQLDelight schemas, app resources, launcher icons, `geoip.dat` / `geosite.dat`, `gradle-wrapper.jar`, and placeholder `.gitkeep` files for generated framework/library directories.
+
+Do not commit local SDK config, IDE state, Gradle/Kotlin caches, build outputs, APK/AAB artifacts, Xray build outputs, generated AAR/XCFramework binaries, downloaded tools, logs, environment files, or signing/provisioning files. Release binaries are produced by CI and attached to GitHub Releases.
+
 ---
 
 ## CI
@@ -225,8 +239,15 @@ make clean    # clean Gradle build + remove ktlint binary
 ### On `v*.*.*` tag push
 
 `.github/workflows/release.yml` runs tests, then:
-- **android** — `assembleDebug`, uploads `android-apk-<tag>.apk`
+- **android** — builds XrayCore, then creates an installable APK and attaches it to the GitHub Release. If Android signing secrets are configured, it uploads a signed release APK; otherwise it uploads a debug APK fallback.
 - **ios** — builds XCFramework, then either a simulator build (default) or a signed IPA if `IOS_CERT_BASE64`, `IOS_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64` secrets are set; uploads `ios-ipa-<tag>`
+
+Android release signing secrets:
+
+- `ANDROID_KEYSTORE_BASE64` — base64-encoded `.keystore` / `.jks`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
 
 To publish a release:
 

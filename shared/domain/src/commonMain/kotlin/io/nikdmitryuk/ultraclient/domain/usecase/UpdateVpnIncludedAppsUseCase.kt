@@ -12,6 +12,9 @@ class UpdateVpnIncludedAppsUseCase(
             val included = rules.filter { it.throughVpn }
             repository.update(
                 current.copy(
+                    killSwitchEnabled = false,
+                    fakeDnsEnabled = true,
+                    randomPortEnabled = false,
                     vpnIncludedApps = included,
                     legacyBypassAppIds = emptyList(),
                 ),

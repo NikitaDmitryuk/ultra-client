@@ -5,18 +5,19 @@ import io.nikdmitryuk.ultraclient.domain.model.VlessConfig
 
 /**
  * Генерация JSON для Xray. Диагностика allow-list / DNS:
- * - **Fake DNS off** — в настройках AntiDetect выключить fake DNS и сравнить поведение отмеченных приложений.
+ * - **Fake DNS** — runtime Android VPN path keeps it enabled by default for TUN DNS handling.
  * - **initDns** — в `androidApp/build.gradle.kts` поле `LIBXRAY_SKIP_INIT_DNS` (пропуск вызова `libXray.initDns`).
  */
 class XrayConfigBuilder {
     /**
+     * @param _localSocksPort legacy parameter kept for call-site compatibility; Android VPN mode uses Xray's TUN inbound.
      * @param _localDnsPort reserved for a future dedicated DNS inbound; currently unused in generated JSON (TUN + LibXray handle DNS).
      * @param xrayErrorLogPath when non-null (e.g. debug), Xray writes internal errors to this file and loglevel is raised to debug.
      */
     fun build(
         vlessConfig: VlessConfig,
         antiDetect: AntiDetectConfig,
-        localSocksPort: Int,
+        @Suppress("UNUSED_PARAMETER") _localSocksPort: Int,
         @Suppress("UNUSED_PARAMETER") _localDnsPort: Int,
         xrayErrorLogPath: String? = null,
     ): String =
@@ -32,7 +33,7 @@ class XrayConfigBuilder {
 
             append("""  "inbounds": [""")
             appendLine()
-            appendLine(buildSocksInbound(localSocksPort, antiDetect.fakeDnsEnabled))
+            appendLine(buildTunInbound(antiDetect.fakeDnsEnabled))
             appendLine("  ],")
 
             append("""  "outbounds": [""")
@@ -75,17 +76,12 @@ class XrayConfigBuilder {
     "servers": ["1.1.1.1", "8.8.8.8"]
   },"""
 
-    private fun buildSocksInbound(
-        port: Int,
-        fakeDns: Boolean,
-    ): String {
+    private fun buildTunInbound(fakeDns: Boolean): String {
         val destOverride = if (fakeDns) """["http","tls","fakedns"]""" else """["http","tls"]"""
         return """    {
-      "tag": "socks-in",
-      "listen": "127.0.0.1",
-      "port": $port,
-      "protocol": "socks",
-      "settings": { "auth": "noauth", "udp": true, "ip": "127.0.0.1" },
+      "tag": "tun-in",
+      "protocol": "tun",
+      "settings": { "name": "ultra-client", "MTU": 1500, "userLevel": 0 },
       "sniffing": { "enabled": true, "destOverride": $destOverride }
     }"""
     }

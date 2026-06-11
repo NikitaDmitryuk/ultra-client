@@ -5,7 +5,6 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
 import io.nikdmitryuk.ultraclient.domain.model.VpnAppRouteRule
 import io.nikdmitryuk.ultraclient.domain.repository.AntiDetectRepository
-import io.nikdmitryuk.ultraclient.domain.usecase.UpdateAntiDetectUseCase
 import io.nikdmitryuk.ultraclient.domain.usecase.UpdateVpnIncludedAppsUseCase
 import io.nikdmitryuk.ultraclient.presentation.platform.InstalledAppsProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +21,6 @@ data class SettingsUiState(
 
 class SettingsScreenModel(
     private val antiDetectRepository: AntiDetectRepository,
-    private val updateAntiDetectUseCase: UpdateAntiDetectUseCase,
     private val updateVpnIncludedAppsUseCase: UpdateVpnIncludedAppsUseCase,
     private val installedAppsProvider: InstalledAppsProvider,
 ) : ScreenModel {
@@ -50,12 +48,6 @@ class SettingsScreenModel(
         }
     }
 
-    fun toggleKillSwitch(enabled: Boolean) = updateConfig { it.copy(killSwitchEnabled = enabled) }
-
-    fun toggleFakeDns(enabled: Boolean) = updateConfig { it.copy(fakeDnsEnabled = enabled) }
-
-    fun toggleRandomPort(enabled: Boolean) = updateConfig { it.copy(randomPortEnabled = enabled) }
-
     fun toggleThroughVpn(
         appId: String,
         throughVpn: Boolean,
@@ -68,12 +60,6 @@ class SettingsScreenModel(
         _uiState.update { it.copy(availableApps = updated) }
         screenModelScope.launch {
             updateVpnIncludedAppsUseCase(updated.filter { it.throughVpn })
-        }
-    }
-
-    private fun updateConfig(transform: (AntiDetectConfig) -> AntiDetectConfig) {
-        screenModelScope.launch {
-            updateAntiDetectUseCase(transform(_uiState.value.config))
         }
     }
 }
