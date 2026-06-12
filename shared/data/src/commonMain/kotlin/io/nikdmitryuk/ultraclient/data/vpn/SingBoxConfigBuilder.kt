@@ -46,6 +46,7 @@ class SingBoxConfigBuilder {
                         "cache_file",
                         buildJsonObject {
                             put("enabled", true)
+                            options.cacheFilePath?.takeIf { it.isNotBlank() }?.let { put("path", it) }
                         },
                     )
                 },
@@ -88,12 +89,6 @@ class SingBoxConfigBuilder {
             put(
                 "rules",
                 buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("rule_set", "geosite-private")
-                            put("server", "local")
-                        },
-                    )
                     if (fakeDns) {
                         add(
                             buildJsonObject {
@@ -114,7 +109,7 @@ class SingBoxConfigBuilder {
         buildJsonObject {
             put("type", "tun")
             put("tag", "tun-in")
-            put("interface_name", options.interfaceName)
+            options.interfaceName.takeIf { it.isNotBlank() }?.let { put("interface_name", it) }
             put("mtu", options.mtu)
             put("address", buildStringArray(options.ipv4Address, options.ipv6Address))
             put("auto_route", options.autoRoute)
@@ -191,29 +186,6 @@ class SingBoxConfigBuilder {
             put("auto_detect_interface", options.autoDetectInterface)
             put("default_domain_resolver", "remote")
             put(
-                "rule_set",
-                buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("type", "remote")
-                            put("tag", "geosite-ads")
-                            put("format", "binary")
-                            put("url", "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs")
-                            put("download_detour", "proxy-out")
-                        },
-                    )
-                    add(
-                        buildJsonObject {
-                            put("type", "remote")
-                            put("tag", "geosite-private")
-                            put("format", "binary")
-                            put("url", "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-private.srs")
-                            put("download_detour", "direct")
-                        },
-                    )
-                },
-            )
-            put(
                 "rules",
                 buildJsonArray {
                     add(
@@ -232,12 +204,6 @@ class SingBoxConfigBuilder {
                         buildJsonObject {
                             put("ip_is_private", true)
                             put("outbound", "direct")
-                        },
-                    )
-                    add(
-                        buildJsonObject {
-                            put("rule_set", "geosite-ads")
-                            put("outbound", "block")
                         },
                     )
                     if (fakeDns) {
@@ -267,5 +233,6 @@ data class SingBoxOptions(
     val stack: String = "mixed",
     val logLevel: String = "warn",
     val logPath: String? = null,
+    val cacheFilePath: String? = null,
     val autoDetectInterface: Boolean = true,
 )

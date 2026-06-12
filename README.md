@@ -134,7 +134,7 @@ Three Voyager screens:
 
 ### Desktop
 
-`desktopApp` reuses the shared UI and data layers. The JVM VPN engine writes a sing-box config and starts a bundled/system `sing-box` binary. Production packaging should install a privileged helper/service for TUN/routes/DNS on macOS, Windows, and Linux.
+`desktopApp` reuses the shared UI and data layers. The JVM VPN engine writes a sing-box config and starts a bundled/system `sing-box` binary. On macOS it talks to an installed LaunchDaemon helper over a local Unix socket; the helper runs as root, owns the TUN lifecycle, and only accepts requests from the UID captured during installation. The App Store/hardened macOS path should use a signed native host app plus Packet Tunnel Network Extension.
 
 ---
 
@@ -193,11 +193,34 @@ make sing-box-android
 #   androidApp/libs/SingBoxCore.aar
 ```
 
-Desktop expects a bundled helper or a `sing-box` binary discoverable through `ULTRA_SING_BOX_PATH`, `~/.ultra-client/bin/sing-box`, or `PATH`. For local host binaries:
+Desktop expects a `sing-box` binary discoverable through `ULTRA_SING_BOX_PATH`, `~/.ultra-client/bin/sing-box`, the local development build output, or `PATH`. For local host binaries:
 
 ```bash
 make sing-box-desktop
 ```
+
+Install the macOS LaunchDaemon helper once:
+
+```bash
+make macos-helper-install
+```
+
+The installer compiles `desktop-helper/macos/UltraVpnHelper.swift`, copies it to `/Library/PrivilegedHelperTools/ultra-vpn-helper`, and registers `/Library/LaunchDaemons/io.nikdmitryuk.ultraclient.helper.plist`.
+
+Runtime files are written under `~/.ultra-client/`:
+
+```text
+~/.ultra-client/runtime/sing-box-config.json
+~/.ultra-client/runtime/sing-box.pid
+~/.ultra-client/logs/sing-box.log
+~/.ultra-client/logs/sing-box.stderr.log
+```
+
+Disconnect asks the helper to stop `sing-box`. If the app is killed during development, run `make macos-helper-uninstall` or reconnect and disconnect from the UI.
+
+### macOS Network Extension path
+
+The repository also contains `iosApp/NetworkExtension/PacketTunnelProvider.swift`, which is the starting point for the hardened macOS/iOS Packet Tunnel target. To ship that path, create a signed macOS host app target in Xcode, embed the Packet Tunnel extension, enable App Groups and `packet-tunnel-provider` entitlements for both targets, and link the sing-box Apple framework inside the extension. The Compose Desktop LaunchDaemon path remains the practical non-App-Store desktop runtime.
 
 ---
 

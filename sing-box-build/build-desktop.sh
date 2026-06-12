@@ -31,6 +31,9 @@ if [[ "$TARGET_OS" == "windows" ]]; then
   output_name="sing-box.exe"
 fi
 
-GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH" make
-cp "$SRC_DIR/$output_name" "$OUT_DIR/$output_name"
+GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH" go build \
+  -trimpath \
+  -ldflags="-s -w" \
+  -o "$OUT_DIR/$output_name" \
+  ./cmd/sing-box
 echo "Built $OUT_DIR/$output_name"

@@ -1,16 +1,16 @@
 import NetworkExtension
-// import LibXray  // Uncomment after adding LibXray.xcframework to the NetworkExtension target
+// import LibBox  // Link sing-box Apple framework in the NetworkExtension target.
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
 
-    private var xrayStarted = false
+    private var singBoxStarted = false
 
     override func startTunnel(
         options: [String: NSObject]?,
         completionHandler: @escaping (Error?) -> Void
     ) {
         guard let configData = options?["config"] as? String else {
-            completionHandler(makeError(code: 1, message: "Missing Xray config in start options"))
+            completionHandler(makeError(code: 1, message: "Missing sing-box config in start options"))
             return
         }
 
@@ -30,12 +30,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 completionHandler(error)
                 return
             }
-            // Start Xray with compiled LibXray.xcframework
-            // let err = LibxrayStartXray(configPath)
-            // Replace the stub below with LibxrayStartXray once AAR is linked:
-            let err = self.stubStartXray(configPath: configPath)
+            // Start sing-box with the linked Apple framework.
+            // Replace the stub below with the libbox/sing-box entrypoint once the framework is linked.
+            let err = self.stubStartSingBox(configPath: configPath)
             if err.isEmpty {
-                self.xrayStarted = true
+                self.singBoxStarted = true
                 completionHandler(nil)
             } else {
                 completionHandler(self.makeError(code: 2, message: err))
@@ -47,9 +46,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         with reason: NEProviderStopReason,
         completionHandler: @escaping () -> Void
     ) {
-        if xrayStarted {
-            // LibxrayStopXray()
-            xrayStarted = false
+        if singBoxStarted {
+            // Stop the linked sing-box runtime here.
+            singBoxStarted = false
         }
         completionHandler()
     }
@@ -69,7 +68,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         ) else {
             return ""
         }
-        let path = containerURL.appendingPathComponent("xray_config.json").path
+        let path = containerURL.appendingPathComponent("sing-box-config.json").path
         try? config.write(toFile: path, atomically: true, encoding: .utf8)
         return path
     }
@@ -82,9 +81,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         )
     }
 
-    // Stub: remove this when LibXray is linked
-    private func stubStartXray(configPath: String) -> String {
-        NSLog("PacketTunnelProvider: stubStartXray called with config at \(configPath)")
+    // Stub: remove this when the sing-box Apple framework is linked.
+    private func stubStartSingBox(configPath: String) -> String {
+        NSLog("PacketTunnelProvider: stubStartSingBox called with config at \(configPath)")
         return ""
     }
 }
