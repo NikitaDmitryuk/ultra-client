@@ -43,6 +43,9 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
             implementation(libs.coroutines.android)
         }
+        jvmMain.dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
+        }
         iosMain.dependencies {
             implementation(libs.sqldelight.native.driver)
         }

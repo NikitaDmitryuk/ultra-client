@@ -20,7 +20,7 @@ jobs:
           chmod +x ktlint
 
       - name: Run ktlint
-        run: ./ktlint --relative "{shared,androidApp}/src/**/*.kt"
+        run: ./ktlint --relative "{shared,androidApp,desktopApp}/src/**/*.kt"
 
   # ─── Tests ───────────────────────────────────────────────────────────────────
   test:
@@ -41,6 +41,12 @@ jobs:
 
       - name: Run data tests
         run: ./gradlew :shared:data:jvmTest
+
+      - name: Compile desktop JVM
+        run: ./gradlew :desktopApp:compileKotlinJvm
+
+      - name: Compile Android debug
+        run: ./gradlew :androidApp:compileDebugKotlin
 
       - name: Upload test results
         if: always()

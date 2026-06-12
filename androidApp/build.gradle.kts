@@ -30,8 +30,7 @@ android {
         targetSdk = 35
         versionCode = releaseVersionCode.get()
         versionName = releaseVersionName.get()
-        // A/B: при подозрении на конфликт Go resolver и системного DNS выставить true и пересобрать.
-        buildConfigField("boolean", "LIBXRAY_SKIP_INIT_DNS", "false")
+        buildConfigField("boolean", "SING_BOX_ENABLED", "true")
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -86,8 +85,10 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.androidx.core.ktx)
 
-    val xrayAar = file("libs/XrayCore.aar")
-    if (xrayAar.exists()) {
-        implementation(files("libs/XrayCore.aar"))
+    val singBoxAar = file("libs/SingBoxCore.aar")
+    if (singBoxAar.exists()) {
+        implementation(files("libs/SingBoxCore.aar"))
+    } else {
+        releaseImplementation(files("libs/SingBoxCore.aar"))
     }
 }

@@ -58,9 +58,9 @@ xcuserdata/
 iosApp/Frameworks/*.xcframework
 !iosApp/Frameworks/.gitkeep
 
-# Xray source downloads (fetched by build script)
-xray-build/xray-core-src/
-xray-build/output/
+# sing-box source downloads and build outputs (fetched by build script)
+sing-box-build/sing-box-src/
+sing-box-build/output/
 
 # Local tools, logs, and environment
 ktlint

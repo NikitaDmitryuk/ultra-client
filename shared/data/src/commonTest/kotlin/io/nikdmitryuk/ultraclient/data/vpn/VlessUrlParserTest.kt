@@ -74,6 +74,15 @@ class VlessUrlParserTest {
     }
 
     @Test
+    fun parseClientApiUrl() {
+        val url =
+            "vless://123e4567-e89b-12d3-a456-426614174000@example.com:443" +
+                "?security=reality&type=tcp&api=https%3A%2F%2Fbot.example.com%3A8444%2Fapi%2Fclient"
+        val cfg = parser.parse(url).config
+        assertEquals("https://bot.example.com:8444/api/client", cfg.apiBaseUrl)
+    }
+
+    @Test
     fun missingAtSignThrows() {
         assertFailsWith<VlessParseException> {
             parser.parse("vless://nouserinfo:443?security=none")

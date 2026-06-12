@@ -73,6 +73,7 @@ class VlessUrlParser : VpnUrlParser {
             wsPath = params["path"]?.let { urlDecode(it) } ?: "",
             wsHost = params["host"] ?: "",
             grpcServiceName = params["serviceName"] ?: "",
+            apiBaseUrl = params["api"]?.let { urlDecode(it) } ?: "",
         )
     }
 

@@ -8,15 +8,14 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
-import android.os.ParcelFileDescriptor
 import android.os.PowerManager
-import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import io.nikdmitryuk.ultraclient.android.BuildConfig
 import io.nikdmitryuk.ultraclient.android.MainActivity
+import io.nikdmitryuk.ultraclient.data.vpn.SingBoxConfigBuilder
+import io.nikdmitryuk.ultraclient.data.vpn.SingBoxOptions
 import io.nikdmitryuk.ultraclient.data.vpn.VpnStateHolder
-import io.nikdmitryuk.ultraclient.data.vpn.XrayConfigBuilder
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
 import io.nikdmitryuk.ultraclient.domain.model.VlessConfig
 import io.nikdmitryuk.ultraclient.domain.model.VpnState
@@ -39,16 +38,9 @@ class UltraVpnService : VpnService() {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "ultra_vpn_channel"
         private const val TAG = "UltraVpnService"
-
-        private const val READINESS_POLL_MS = 250L
-        private const val READINESS_TIMEOUT_MS = 5_000L
-
-        /** Минимум времени в Connecting после старта проверки готовности, чтобы UI не мигал. */
-        private const val MIN_CONNECTING_VISIBLE_MS = 800L
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var tunFd: ParcelFileDescriptor? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -78,16 +70,14 @@ class UltraVpnService : VpnService() {
 
     override fun onRevoke() {
         super.onRevoke()
-        XrayBridge.stopXray()
-        closeTun()
+        SingBoxBridge.stop()
         VpnStateHolder.emit(VpnState.Disconnected)
         stopSelf()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        XrayBridge.stopXray()
-        closeTun()
+        SingBoxBridge.stop()
         serviceScope.cancel()
         wakeLock?.release()
     }
@@ -97,7 +87,8 @@ class UltraVpnService : VpnService() {
         antiDetect: AntiDetectConfig,
     ) {
         try {
-            startTunnelBody(vlessConfig, antiDetect)
+            if (!BuildConfig.SING_BOX_ENABLED) error("sing-box runtime is disabled")
+            startSingBoxTunnelBody(vlessConfig, antiDetect)
         } catch (t: Throwable) {
             Log.e(TAG, "startTunnel failed", t)
             VpnStateHolder.emit(VpnState.Error(t.message ?: t.javaClass.simpleName))
@@ -105,7 +96,7 @@ class UltraVpnService : VpnService() {
         }
     }
 
-    private fun startTunnelBody(
+    private fun startSingBoxTunnelBody(
         vlessConfig: VlessConfig,
         antiDetect: AntiDetectConfig,
     ) {
@@ -116,38 +107,20 @@ class UltraVpnService : VpnService() {
                 randomPortEnabled = false,
             )
 
-        val xrayErrorLogPath =
-            if (BuildConfig.DEBUG) File(cacheDir, "xray-error.log").absolutePath else null
-        if (xrayErrorLogPath != null) {
-            Log.i(TAG, "Xray error log (debug): $xrayErrorLogPath")
-        }
-
-        val xrayConfig =
-            XrayConfigBuilder().build(
-                vlessConfig,
-                effectiveAntiDetect,
-                0,
-                0,
-                xrayErrorLogPath,
+        val logPath =
+            if (BuildConfig.DEBUG) File(cacheDir, "sing-box.log").absolutePath else null
+        val singBoxConfig =
+            SingBoxConfigBuilder().build(
+                vlessConfig = vlessConfig,
+                antiDetect = effectiveAntiDetect,
+                options =
+                    SingBoxOptions(
+                        interfaceName = "ultra0",
+                        logLevel = if (BuildConfig.DEBUG) "debug" else "warn",
+                        logPath = logPath,
+                        autoDetectInterface = false,
+                    ),
             )
-
-        val allowedCount = effectiveAntiDetect.vpnIncludedApps.count { it.throughVpn }
-        val legacyBypassCount = effectiveAntiDetect.legacyBypassAppIds.size
-        val routingMode =
-            when {
-                allowedCount > 0 -> "allow_list(count=$allowedCount)"
-                legacyBypassCount > 0 -> "legacy_bypass(count=$legacyBypassCount)"
-                else -> "full_tunnel"
-            }
-        if (BuildConfig.DEBUG) {
-            Log.i(
-                TAG,
-                "startTunnel server=${vlessConfig.address}:${vlessConfig.port} " +
-                    "inbound=tun fakeDns=${effectiveAntiDetect.fakeDnsEnabled} routing=$routingMode",
-            )
-        } else {
-            Log.i(TAG, "startTunnel inbound=tun fakeDns=${effectiveAntiDetect.fakeDnsEnabled} routing=$routingMode")
-        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
@@ -155,75 +128,27 @@ class UltraVpnService : VpnService() {
             startForeground(NOTIFICATION_ID, buildNotification())
         }
 
-        val tun = TunConfigurator(this).establish(effectiveAntiDetect)
-        tunFd = tun
-        Log.i(TAG, "TUN fd=${tun.fd} established inbound=tun")
-
-        val datDir = GeoDataInstaller.ensureInstalled(this)
         if (BuildConfig.DEBUG) {
-            val configFile = File(cacheDir, "xray-config.json")
-            configFile.writeText(xrayConfig)
-            val preflightTun = ParcelFileDescriptor.dup(tun.fileDescriptor)
-            val configError =
-                try {
-                    XrayBridge.testXrayConfigPath(
-                        datDir = datDir,
-                        configPath = configFile.absolutePath,
-                        tunFd = preflightTun.fd,
-                    )
-                } finally {
-                    runCatching { preflightTun.close() }
-                }
-            if (configError != null) {
-                Log.e(TAG, "Xray config preflight failed: $configError")
-                closeTun()
-                VpnStateHolder.emit(VpnState.Error("Xray config invalid: $configError"))
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
-                return
-            }
-            Log.i(TAG, "Xray config preflight OK inbound=tun originalFd=${tun.fd} path=${configFile.absolutePath}")
+            File(cacheDir, "sing-box-config.json").writeText(singBoxConfig)
         }
-        val xrayError = XrayBridge.startXray(xrayConfig, tun.fd, datDir, this)
-        if (xrayError == null) {
-            Log.i(TAG, "startXray returned OK, awaiting readiness (poll=${READINESS_POLL_MS}ms timeout=${READINESS_TIMEOUT_MS}ms)")
-            serviceScope.launch {
-                val readinessStartedAt = SystemClock.elapsedRealtime()
-                val ready =
-                    XrayBridge.awaitCoreReady(
-                        pollIntervalMs = READINESS_POLL_MS,
-                        timeoutMs = READINESS_TIMEOUT_MS,
-                    )
-                if (!ready) {
-                    Log.e(TAG, "Xray readiness failed — getXrayState did not become true in time")
-                    XrayBridge.stopXray()
-                    closeTun()
-                    VpnStateHolder.emit(
-                        VpnState.Error("Xray did not become ready — check node and xray-error.log (debug)"),
-                    )
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
-                    return@launch
-                }
-                val elapsed = SystemClock.elapsedRealtime() - readinessStartedAt
-                val padMs = (MIN_CONNECTING_VISIBLE_MS - elapsed).coerceAtLeast(0L)
-                if (padMs > 0) {
-                    delay(padMs)
-                }
-                Log.i(TAG, "Xray ready inbound=tun (readiness ${elapsed}ms + ui_pad ${padMs}ms)")
-                VpnStateHolder.emit(VpnState.Connected(vlessConfig.address, System.currentTimeMillis()))
-                startWatchdog()
-            }
-        } else {
-            Log.e(TAG, "startXray failed: $xrayError")
-            VpnStateHolder.emit(VpnState.Error(xrayError))
-            stopSelf()
+        val startError =
+            SingBoxBridge.start(
+                configJson = singBoxConfig,
+                antiDetect = effectiveAntiDetect,
+                cacheDir = cacheDir,
+                vpn = this,
+            )
+        if (startError != null) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            error(startError)
         }
+        Log.i(TAG, "sing-box ready inbound=tun")
+        VpnStateHolder.emit(VpnState.Connected(vlessConfig.address, System.currentTimeMillis()))
+        startWatchdog()
     }
 
     private fun stopTunnel() {
-        XrayBridge.stopXray()
-        closeTun()
+        SingBoxBridge.stop()
         VpnStateHolder.emit(VpnState.Disconnected)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -233,18 +158,13 @@ class UltraVpnService : VpnService() {
         serviceScope.launch {
             while (true) {
                 delay(5_000)
-                if (!XrayBridge.isRunning()) {
-                    VpnStateHolder.emit(VpnState.Error("Xray process terminated unexpectedly"))
+                if (!SingBoxBridge.isRunning()) {
+                    VpnStateHolder.emit(VpnState.Error("sing-box process terminated unexpectedly"))
                     stopTunnel()
                     break
                 }
             }
         }
-    }
-
-    private fun closeTun() {
-        tunFd?.close()
-        tunFd = null
     }
 
     private fun acquireWakeLock() {
