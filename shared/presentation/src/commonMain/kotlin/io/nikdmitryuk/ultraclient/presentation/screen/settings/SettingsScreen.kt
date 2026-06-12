@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -21,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +45,7 @@ class SettingsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
 
         LaunchedEffect(Unit) { model.loadInstalledApps() }
+        LaunchedEffect(state.activeProfile?.id) { model.loadLocations() }
 
         Scaffold(
             topBar = {
@@ -72,6 +75,17 @@ class SettingsScreen : Screen {
 
                 item {
                     ConnectivityHintsCard()
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    Text(
+                        "Location",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                    LocationSelector(state, model)
                 }
 
                 if (state.availableApps.isNotEmpty()) {
@@ -111,6 +125,62 @@ class SettingsScreen : Screen {
                     }
                     item {
                         VpnAppsTroubleshootFooter()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationSelector(
+    state: SettingsUiState,
+    model: SettingsScreenModel,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        state.locationMessage?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (state.isLoadingLocations) {
+            CircularProgressIndicator(modifier = Modifier.padding(vertical = 8.dp))
+        }
+        val selection = state.exitSelection
+        if (selection != null) {
+            TextButton(
+                onClick = { model.selectLocation(null) },
+                enabled = !state.isLoadingLocations && selection.selectedExitId != null,
+            ) {
+                Text(if (selection.selectedExitId == null) "Auto selected" else "Auto")
+            }
+            selection.exits.forEach { exit ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(exit.displayName, style = MaterialTheme.typography.bodyMedium)
+                        val details =
+                            buildList {
+                                if (exit.selected) add("selected")
+                                if (exit.effective) add("effective")
+                                add(if (exit.reachable) "reachable" else "unreachable")
+                                exit.latencyMs?.let { add("${it} ms") }
+                            }.joinToString(" · ")
+                        Text(
+                            details,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(
+                        onClick = { model.selectLocation(exit.id) },
+                        enabled = !state.isLoadingLocations && !exit.selected,
+                    ) {
+                        Text(if (exit.selected) "Selected" else "Choose")
                     }
                 }
             }
@@ -162,7 +232,7 @@ private fun ConnectivityHintsCard() {
 @Composable
 private fun VpnAppsTroubleshootFooter() {
     Text(
-        "Still stuck? Capture logcat while reproducing (filters: TunConfigurator, XrayBridge, Xray).",
+        "Still stuck? Capture logcat while reproducing (filters: TunConfigurator, SingBoxBridge, sing-box).",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 8.dp),

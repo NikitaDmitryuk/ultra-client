@@ -20,4 +20,5 @@ data class VlessConfig(
     val wsPath: String = "",
     val wsHost: String = "",
     val grpcServiceName: String = "",
+    val apiBaseUrl: String = "",
 )

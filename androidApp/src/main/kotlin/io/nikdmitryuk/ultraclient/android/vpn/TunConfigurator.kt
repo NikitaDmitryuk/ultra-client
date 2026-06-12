@@ -4,6 +4,7 @@ import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
+import java.lang.reflect.Method
 
 class TunConfigurator(
     private val service: VpnService,
@@ -66,6 +67,65 @@ class TunConfigurator(
                 ),
         )
         // #endregion
+        return tun
+    }
+
+    fun establishForSingBox(
+        tunOptions: Any,
+        antiDetectConfig: AntiDetectConfig,
+    ): ParcelFileDescriptor {
+        val builder = service.Builder()
+        builder.setSession("ultra-client")
+        builder.setMtu(callInt(tunOptions, "getMTU", "GetMTU") ?: 1500)
+
+        val addresses =
+            routePrefixes(tunOptions, "getInet4Address", "GetInet4Address") +
+                routePrefixes(tunOptions, "getInet6Address", "GetInet6Address")
+        if (addresses.isEmpty()) {
+            builder.addAddress("172.19.0.1", 30)
+        } else {
+            addresses.forEach { prefix ->
+                builder.addAddress(prefix.address, prefix.prefix)
+            }
+        }
+
+        val routes =
+            routePrefixes(tunOptions, "getInet4RouteRange", "GetInet4RouteRange") +
+                routePrefixes(tunOptions, "getInet6RouteRange", "GetInet6RouteRange")
+        if (routes.isEmpty()) {
+            applyRoutes(builder)
+        } else {
+            routes.forEach { prefix ->
+                builder.addRoute(prefix.address, prefix.prefix)
+            }
+        }
+
+        val dnsServer = callStringBox(tunOptions, "getDNSServerAddress", "GetDNSServerAddress")
+        if (dnsServer.isNullOrBlank()) {
+            applyDns(builder, antiDetectConfig.fakeDnsEnabled)
+        } else {
+            builder.addDnsServer(dnsServer)
+        }
+
+        val perAppStats = applyPerAppRouting(builder, antiDetectConfig)
+        logVpnBuilderSummary(antiDetectConfig)
+        builder.setBlocking(true)
+        val tun =
+            builder.establish()
+                ?: error("VpnService.Builder.establish() returned null — permission not granted?")
+        AgentDebugLog.log(
+            hypothesisId = "S",
+            location = "TunConfigurator.establishForSingBox",
+            message = "singbox_tun_established",
+            data =
+                mapOf(
+                    "fd" to tun.fd,
+                    "addresses" to addresses.joinToString { it.toString() },
+                    "routes" to routes.size,
+                    "dns" to (dnsServer ?: "platform"),
+                    "perAppMode" to perAppStats.mode,
+                ),
+        )
         return tun
     }
 
@@ -157,4 +217,63 @@ class TunConfigurator(
             }
         Log.i(TAG, "VPN Builder DNS=$dns perApp=$mode fakeDnsFlag=${anti.fakeDnsEnabled}")
     }
+
+    private data class Prefix(
+        val address: String,
+        val prefix: Int,
+    ) {
+        override fun toString(): String = "$address/$prefix"
+    }
+
+    private fun routePrefixes(
+        target: Any,
+        vararg methodNames: String,
+    ): List<Prefix> {
+        val iterator = callAny(target, *methodNames) ?: return emptyList()
+        val hasNext = findMethod(iterator, "hasNext", "HasNext") ?: return emptyList()
+        val next = findMethod(iterator, "next", "Next") ?: return emptyList()
+        val result = mutableListOf<Prefix>()
+        while ((hasNext.invoke(iterator) as? Boolean) == true) {
+            val prefix = next.invoke(iterator) ?: break
+            val address = callString(prefix, "address", "Address") ?: continue
+            val prefixBits = callInt(prefix, "prefix", "Prefix") ?: continue
+            result += Prefix(address, prefixBits)
+        }
+        return result
+    }
+
+    private fun callStringBox(
+        target: Any,
+        vararg methodNames: String,
+    ): String? {
+        val box = callAny(target, *methodNames) ?: return null
+        return box.javaClass.fields
+            .firstOrNull { it.name.equals("value", ignoreCase = true) }
+            ?.get(box) as? String
+            ?: callString(box, "getValue", "GetValue", "value", "Value")
+            ?: box.toString().takeIf { it.isNotBlank() && !it.contains("@") }
+    }
+
+    private fun callAny(
+        target: Any,
+        vararg methodNames: String,
+    ): Any? = findMethod(target, *methodNames)?.invoke(target)
+
+    private fun callString(
+        target: Any,
+        vararg methodNames: String,
+    ): String? = callAny(target, *methodNames) as? String
+
+    private fun callInt(
+        target: Any,
+        vararg methodNames: String,
+    ): Int? = (callAny(target, *methodNames) as? Number)?.toInt()
+
+    private fun findMethod(
+        target: Any,
+        vararg names: String,
+    ): Method? =
+        names.firstNotNullOfOrNull { name ->
+            target.javaClass.methods.firstOrNull { it.name == name && it.parameterTypes.isEmpty() }
+        }
 }

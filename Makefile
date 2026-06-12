@@ -1,17 +1,17 @@
 KTLINT_VERSION := 1.5.0
 KTLINT         := ./ktlint
 
-.PHONY: setup format lint test clean xray-android xray-ios xray
+.PHONY: setup format lint test clean sing-box-android sing-box-desktop sing-box
 
 setup:
 	curl -sSLO https://github.com/pinterest/ktlint/releases/download/$(KTLINT_VERSION)/ktlint
 	chmod +x ktlint
 
 format: setup
-	$(KTLINT) --format "{shared,androidApp}/src/**/*.kt"
+	$(KTLINT) --format "{shared,androidApp,desktopApp}/src/**/*.kt"
 
 lint: setup
-	$(KTLINT) --relative "{shared,androidApp}/src/**/*.kt"
+	$(KTLINT) --relative "{shared,androidApp,desktopApp}/src/**/*.kt"
 
 test:
 	./gradlew :shared:domain:jvmTest :shared:data:jvmTest
@@ -20,16 +20,11 @@ clean:
 	./gradlew clean
 	rm -f ktlint
 
-# Сборка AAR: ANDROID_HOME/ANDROID_NDK_HOME подставляются в xray-build/build-android.sh при стандартном SDK.
-xray-android:
-	bash xray-build/build-android.sh
-	mkdir -p androidApp/libs
-	cp xray-build/output/android/XrayCore.aar androidApp/libs/
+# Builds androidApp/libs/SingBoxCore.aar from upstream sing-box libbox.
+sing-box-android:
+	bash sing-box-build/build-android.sh
 
-xray-ios:
-	bash xray-build/build-ios.sh
-	mkdir -p iosApp/Frameworks
-	cp -R xray-build/output/ios/LibXray.xcframework iosApp/Frameworks/
+sing-box-desktop:
+	bash sing-box-build/build-desktop.sh
 
-xray:
-	bash xray-build/build.sh
+sing-box: sing-box-android sing-box-desktop

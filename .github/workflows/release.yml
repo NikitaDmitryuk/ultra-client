@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.24.7'
           cache: false
 
       - name: Cache Go modules and build cache
@@ -52,19 +52,16 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-xray-${{ hashFiles('xray-build/build-android.sh') }}
-          restore-keys: ${{ runner.os }}-go-xray-
+          key: ${{ runner.os }}-go-sing-box-${{ hashFiles('sing-box-build/build-android.sh') }}
+          restore-keys: ${{ runner.os }}-go-sing-box-
 
       - name: Install Android NDK
         run: $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018"
 
-      - name: Build XrayCore AAR
+      - name: Build SingBoxCore AAR
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
-        run: |
-          bash xray-build/build-android.sh
-          mkdir -p androidApp/libs
-          cp xray-build/output/android/XrayCore.aar androidApp/libs/
+        run: bash sing-box-build/build-android.sh
 
       - uses: gradle/actions/setup-gradle@v4
 

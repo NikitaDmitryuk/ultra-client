@@ -2,7 +2,7 @@
 
 # ultra-client
 
-A Kotlin Multiplatform (KMP) mobile client for the [VLESS](https://xtls.github.io/en/config/outbounds/vless.html) protocol, powered by [Xray-core](https://github.com/XTLS/Xray-core). Runs on **Android** and **iOS** from a single shared codebase.
+A Kotlin Multiplatform (KMP) client for the VLESS protocol, powered by [sing-box](https://sing-box.sagernet.org/). Runs on **Android**, **desktop JVM**, and shared KMP foundations for future Apple targets.
 
 ---
 
@@ -10,7 +10,7 @@ A Kotlin Multiplatform (KMP) mobile client for the [VLESS](https://xtls.github.i
 
 - **VLESS protocol** — Reality, TLS, WebSocket, and gRPC transports
 - **Per-app VPN (Android)** — you choose which apps use the tunnel (`addAllowedApplication`); the rest use the normal connection
-- **Tunnel DNS** — DNS is handled inside the Xray TUN path by default
+- **Tunnel DNS** — DNS is handled inside the sing-box TUN path by default
 - **Shared UI** — Compose Multiplatform UI, single codebase for both platforms
 - **Offline-first** — profiles and settings stored locally with SQLDelight
 
@@ -22,11 +22,10 @@ The project follows Clean Architecture with three Gradle modules inside `shared/
 
 ```
 shared/domain          ← models, repository interfaces, use cases (pure Kotlin)
-shared/data            ← SQLDelight DB, VLESS parser, Xray config builder, platform actuals
+shared/data            ← SQLDelight DB, VLESS parser, sing-box config builder, platform actuals
 shared/presentation    ← Compose Multiplatform screens and ScreenModels
-androidApp             ← Android application, TUN service, Xray bridge
-iosApp                 ← Xcode project, SwiftUI entry, Network Extension
-xray-build             ← Go build scripts for XrayCore.aar and LibXray.xcframework
+androidApp             ← Android application, TUN service, sing-box bridge
+desktopApp             ← Compose Desktop shell
 ```
 
 ### Dependency graph
@@ -47,7 +46,7 @@ shared:presentation ──► shared:data ──► shared:domain
 | DI | Koin 4 with `expect val platformDataModule` |
 | Navigation | Voyager (`Navigator` + `ScreenModel`) |
 | State | Kotlin coroutines + `StateFlow` throughout |
-| iOS memory limit | Network Extension target is pure Swift + LibXray, no KMP runtime |
+| Network engine | sing-box is the only production runtime |
 
 ### Data flow — connect
 
@@ -56,12 +55,12 @@ HomeScreen → HomeScreenModel.toggleVpn()
   → ConnectVpnUseCase(profileId)
       ├── VpnProfileRepository.getById()   → SQLDelight
       ├── AntiDetectRepository.get()       → SQLDelight
-      ├── XrayConfigBuilder.build()        → JSON string
+      ├── SingBoxConfigBuilder.build()     → JSON string
       └── PlatformVpnEngine.connect()
             ↓ Android
             Intent → UltraVpnService
               ├── TunConfigurator.establish() → ParcelFileDescriptor
-              ├── XrayBridge.startXray(json, tunFd)
+              ├── SingBoxBridge.start(json, tunFd)
               └── VpnStateHolder.emit(Connected)
                     → HomeScreenModel reacts → UI updates
 ```
@@ -95,7 +94,7 @@ Pure Kotlin — no Android, no Compose, no platform dependencies.
 
 **VLESS URL parser** (`VlessUrlParser`) — parses `vless://uuid@host:port?params#name`, supports all transport and security parameters.
 
-**Xray config builder** (`XrayConfigBuilder`) — generates complete Xray JSON from `VlessConfig` + `AntiDetectConfig`. Covers Reality, TLS, WS, gRPC stream settings; TUN inbound; FakeDNS injection; routing rules.
+**sing-box config builder** (`SingBoxConfigBuilder`) — generates complete sing-box JSON from `VlessConfig` + `AntiDetectConfig`. Covers Reality, TLS, WS, gRPC transport settings; TUN inbound; FakeIP DNS; routing rules.
 
 **SQLDelight schema** — two tables:
 
@@ -128,18 +127,14 @@ Three Voyager screens:
 
 ### androidApp
 
-- `UltraVpnService` — `VpnService` subclass; TUN lifecycle; foreground service; Xray watchdog coroutine
+- `UltraVpnService` — `VpnService` subclass; TUN lifecycle; foreground service; sing-box watchdog coroutine
 - `TunConfigurator` — `VpnService.Builder` setup: address `10.0.0.1/32`, default routes, DNS, MTU 1500
-- `XrayBridge` — reflection-based bridge to `XrayCore.aar` (gomobile output)
+- `SingBoxBridge` — reflection-based bridge to `SingBoxCore.aar` / mobile binding
 - Per-app VPN — `TunConfigurator` calls `addAllowedApplication()` for each app marked for the tunnel (`VpnAppRouteRule`)
 
-### iOS (Xcode)
+### Desktop
 
-Two targets:
-1. **iosApp** — SwiftUI entry, embeds `SharedPresentation.xcframework`, manages tunnel lifecycle from UI side
-2. **NetworkExtension** — `NEPacketTunnelProvider` subclass, imports `LibXray.xcframework` only (no KMP runtime, stays within memory limit)
-
-Config JSON is passed from the main app to the extension at connection time via start options.
+`desktopApp` reuses the shared UI and data layers. The JVM VPN engine writes a sing-box config and starts a bundled/system `sing-box` binary. Production packaging should install a privileged helper/service for TUN/routes/DNS on macOS, Windows, and Linux.
 
 ---
 
@@ -153,7 +148,7 @@ Config JSON is passed from the main app to the extension at connection time via 
 | Gradle | 8.11 (wrapper included) |
 | Android SDK | API 35, NDK r27+ |
 | Xcode | 16+ (macOS only) |
-| Go | 1.23+ (for Xray engine build) |
+| Go | 1.24.7+ for sing-box 1.13 mobile/desktop helper builds |
 
 ### Android APK
 
@@ -187,19 +182,22 @@ cp -R shared/presentation/build/XCFrameworks/release/SharedPresentation.xcframew
 # 3. Open iosApp/iosApp.xcodeproj and build in Xcode
 ```
 
-### Xray engine (XrayCore.aar / LibXray.xcframework)
+### sing-box engine
 
-The Xray engine is not bundled; build it once from source:
+The sing-box engine is not bundled in source control. Android expects a generated mobile binding:
 
 ```bash
-cd xray-build
-bash build.sh
-# Outputs:
-#   androidApp/libs/XrayCore.aar
-#   iosApp/Frameworks/LibXray.xcframework
+make sing-box-android
+# writes:
+#   sing-box-build/output/android/SingBoxCore.aar
+#   androidApp/libs/SingBoxCore.aar
 ```
 
-Requires Go 1.23+, `gomobile`, Android NDK (for Android), Xcode (for iOS). See `xray-build/build.sh` for the full checklist.
+Desktop expects a bundled helper or a `sing-box` binary discoverable through `ULTRA_SING_BOX_PATH`, `~/.ultra-client/bin/sing-box`, or `PATH`. For local host binaries:
+
+```bash
+make sing-box-desktop
+```
 
 ---
 
@@ -222,9 +220,9 @@ make clean    # clean Gradle build + remove ktlint binary
 
 ### Repository hygiene
 
-Commit source code, Gradle files, GitHub workflows, SQLDelight schemas, app resources, launcher icons, `geoip.dat` / `geosite.dat`, `gradle-wrapper.jar`, and placeholder `.gitkeep` files for generated framework/library directories.
+Commit source code, Gradle files, GitHub workflows, SQLDelight schemas, app resources, launcher icons, `gradle-wrapper.jar`, and placeholder `.gitkeep` files for generated framework/library directories.
 
-Do not commit local SDK config, IDE state, Gradle/Kotlin caches, build outputs, APK/AAB artifacts, Xray build outputs, generated AAR/XCFramework binaries, downloaded tools, logs, environment files, or signing/provisioning files. Release binaries are produced by CI and attached to GitHub Releases.
+Do not commit local SDK config, IDE state, Gradle/Kotlin caches, build outputs, APK/AAB artifacts, sing-box build outputs, generated AAR/native binaries, downloaded tools, logs, environment files, or signing/provisioning files. Release binaries are produced by CI and attached to GitHub Releases.
 
 ---
 
@@ -239,7 +237,7 @@ Do not commit local SDK config, IDE state, Gradle/Kotlin caches, build outputs, 
 ### On `v*.*.*` tag push
 
 `.github/workflows/release.yml` runs tests, then:
-- **android** — builds XrayCore, then creates an installable APK and attaches it to the GitHub Release. If Android signing secrets are configured, it uploads a signed release APK; otherwise it uploads a debug APK fallback.
+- **android** — builds the Android APK and expects the sing-box mobile artifact to be supplied by CI/build setup. If Android signing secrets are configured, it uploads a signed release APK; otherwise it uploads a debug APK fallback.
 - **ios** — builds XCFramework, then either a simulator build (default) or a signed IPA if `IOS_CERT_BASE64`, `IOS_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64` secrets are set; uploads `ios-ipa-<tag>`
 
 Android release signing secrets:
@@ -269,7 +267,7 @@ git push origin v1.2.3
 | Database | SQLDelight | 2.2.1 |
 | Async | Kotlin Coroutines | 1.10.2 |
 | Serialization | kotlinx.serialization | 1.8.1 |
-| Network engine | Xray-core / libXray | latest |
+| Network engine | sing-box | latest |
 | Android Gradle Plugin | AGP | 8.7.3 |
 | Lint | ktlint | 1.5.0 |
 

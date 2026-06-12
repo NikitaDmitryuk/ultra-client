@@ -3,8 +3,12 @@ package io.nikdmitryuk.ultraclient.presentation.screen.settings
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import io.nikdmitryuk.ultraclient.domain.model.AntiDetectConfig
+import io.nikdmitryuk.ultraclient.domain.model.ExitSelectionState
+import io.nikdmitryuk.ultraclient.domain.model.VpnProfile
 import io.nikdmitryuk.ultraclient.domain.model.VpnAppRouteRule
 import io.nikdmitryuk.ultraclient.domain.repository.AntiDetectRepository
+import io.nikdmitryuk.ultraclient.domain.repository.ExitLocationRepository
+import io.nikdmitryuk.ultraclient.domain.repository.VpnProfileRepository
 import io.nikdmitryuk.ultraclient.domain.usecase.UpdateVpnIncludedAppsUseCase
 import io.nikdmitryuk.ultraclient.presentation.platform.InstalledAppsProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,12 +19,18 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val config: AntiDetectConfig = AntiDetectConfig(),
+    val activeProfile: VpnProfile? = null,
     val availableApps: List<VpnAppRouteRule> = emptyList(),
+    val exitSelection: ExitSelectionState? = null,
     val isLoadingApps: Boolean = false,
+    val isLoadingLocations: Boolean = false,
+    val locationMessage: String? = null,
 )
 
 class SettingsScreenModel(
     private val antiDetectRepository: AntiDetectRepository,
+    private val vpnProfileRepository: VpnProfileRepository,
+    private val exitLocationRepository: ExitLocationRepository,
     private val updateVpnIncludedAppsUseCase: UpdateVpnIncludedAppsUseCase,
     private val installedAppsProvider: InstalledAppsProvider,
 ) : ScreenModel {
@@ -31,6 +41,11 @@ class SettingsScreenModel(
         screenModelScope.launch {
             antiDetectRepository.observe().collect { config ->
                 _uiState.update { it.copy(config = config) }
+            }
+        }
+        screenModelScope.launch {
+            vpnProfileRepository.observeAll().collect { profiles ->
+                _uiState.update { it.copy(activeProfile = profiles.firstOrNull { p -> p.isActive }) }
             }
         }
     }
@@ -60,6 +75,55 @@ class SettingsScreenModel(
         _uiState.update { it.copy(availableApps = updated) }
         screenModelScope.launch {
             updateVpnIncludedAppsUseCase(updated.filter { it.throughVpn })
+        }
+    }
+
+    fun loadLocations() {
+        val profile = _uiState.value.activeProfile
+        if (profile == null) {
+            _uiState.update { it.copy(exitSelection = null, locationMessage = "No active profile selected") }
+            return
+        }
+        screenModelScope.launch {
+            _uiState.update { it.copy(isLoadingLocations = true, locationMessage = null) }
+            exitLocationRepository.getLocations(profile)
+                .onSuccess { selection ->
+                    _uiState.update { it.copy(exitSelection = selection, isLoadingLocations = false) }
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            exitSelection = null,
+                            isLoadingLocations = false,
+                            locationMessage = e.message ?: "Location selection unavailable",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun selectLocation(exitId: String?) {
+        val profile = _uiState.value.activeProfile ?: return
+        screenModelScope.launch {
+            _uiState.update { it.copy(isLoadingLocations = true, locationMessage = null) }
+            exitLocationRepository.selectLocation(profile, exitId)
+                .onSuccess { selection ->
+                    _uiState.update {
+                        it.copy(
+                            exitSelection = selection,
+                            isLoadingLocations = false,
+                            locationMessage = "Location updated. Existing connections may reconnect briefly.",
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingLocations = false,
+                            locationMessage = e.message ?: "Could not update location",
+                        )
+                    }
+                }
         }
     }
 }

@@ -19,6 +19,7 @@ dependencyResolutionManagement {
 rootProject.name = "ultra-client"
 
 include(":androidApp")
+include(":desktopApp")
 include(":shared:domain")
 include(":shared:data")
 include(":shared:presentation")

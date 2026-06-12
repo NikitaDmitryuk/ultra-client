@@ -9,5 +9,5 @@ val presentationModule =
     module {
         factory { HomeScreenModel(get(), get(), get(), get()) }
         factory { ProfilesScreenModel(get(), get(), get(), get(), get()) }
-        factory { SettingsScreenModel(get(), get(), get()) }
+        factory { SettingsScreenModel(get(), get(), get(), get(), get()) }
     }
