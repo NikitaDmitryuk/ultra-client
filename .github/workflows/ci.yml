@@ -7,7 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  # ─── Lint ────────────────────────────────────────────────────────────────────
   lint:
     name: Lint (ktlint)
     runs-on: ubuntu-latest
@@ -22,8 +21,7 @@ jobs:
       - name: Run ktlint
         run: ./ktlint --relative "{shared,androidApp,desktopApp}/src/**/*.kt"
 
-  # ─── Tests ───────────────────────────────────────────────────────────────────
-  test:
+  unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
@@ -36,17 +34,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Run domain tests
-        run: ./gradlew :shared:domain:jvmTest
-
-      - name: Run data tests
-        run: ./gradlew :shared:data:jvmTest
-
-      - name: Compile desktop JVM
-        run: ./gradlew :desktopApp:compileKotlinJvm
-
-      - name: Compile Android debug
-        run: ./gradlew :androidApp:compileDebugKotlin
+      - name: Run JVM tests
+        run: ./gradlew :shared:domain:jvmTest :shared:data:jvmTest
 
       - name: Upload test results
         if: always()
@@ -56,3 +45,146 @@ jobs:
           path: |
             shared/domain/build/reports/tests/jvmTest/
             shared/data/build/reports/tests/jvmTest/
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile Android debug
+        run: ./gradlew :androidApp:compileDebugKotlin
+
+  ios:
+    name: iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build shared iOS XCFramework
+        run: ./gradlew :shared:presentation:assembleSharedPresentationXCFramework
+
+      - name: Upload iOS XCFramework
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-shared-xcframework
+          path: shared/presentation/build/XCFrameworks/release/SharedPresentation.xcframework
+          if-no-files-found: error
+
+  desktop-linux:
+    name: Desktop Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build desktop app jar
+        run: ./gradlew :desktopApp:packageUberJarForCurrentOS
+
+      - name: Build sing-box desktop binary
+        run: bash sing-box-build/build-desktop.sh
+
+      - name: Upload Linux desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            desktopApp/build/compose/jars/*.jar
+            sing-box-build/output/desktop/sing-box
+          if-no-files-found: error
+
+  desktop-macos:
+    name: Desktop macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build desktop app jar
+        run: ./gradlew :desktopApp:packageUberJarForCurrentOS
+
+      - name: Build sing-box desktop binary
+        run: bash sing-box-build/build-desktop.sh
+
+      - name: Compile macOS LaunchDaemon helper
+        run: swiftc desktop-helper/macos/UltraVpnHelper.swift -o desktop-helper/macos/ultra-vpn-helper
+
+      - name: Upload macOS desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          path: |
+            desktopApp/build/compose/jars/*.jar
+            sing-box-build/output/desktop/sing-box
+            desktop-helper/macos/ultra-vpn-helper
+          if-no-files-found: error
+
+  desktop-windows:
+    name: Desktop Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build desktop app jar
+        run: ./gradlew.bat :desktopApp:packageUberJarForCurrentOS
+
+      - name: Build sing-box desktop binary
+        shell: bash
+        run: bash sing-box-build/build-desktop.sh
+
+      - name: Upload Windows desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
+            desktopApp/build/compose/jars/*.jar
+            sing-box-build/output/desktop/sing-box.exe
+          if-no-files-found: error

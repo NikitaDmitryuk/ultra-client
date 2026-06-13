@@ -25,6 +25,10 @@ if [[ -z "${ANDROID_HOME:-}" ]]; then
   exit 1
 fi
 
+if [[ -z "${ANDROID_NDK_HOME:-}" && -n "${ANDROID_NDK_ROOT:-}" ]]; then
+  export ANDROID_NDK_HOME="$ANDROID_NDK_ROOT"
+fi
+
 if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
   latest_ndk="$(find "$ANDROID_HOME/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)"
   if [[ -n "$latest_ndk" ]]; then
@@ -32,10 +36,17 @@ if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
   fi
 fi
 
+if [[ -z "${ANDROID_NDK_HOME:-}" && -d "$ANDROID_HOME/ndk-bundle" ]]; then
+  export ANDROID_NDK_HOME="$ANDROID_HOME/ndk-bundle"
+fi
+
 if [[ -z "${ANDROID_NDK_HOME:-}" || ! -d "$ANDROID_NDK_HOME" ]]; then
   echo "ANDROID_NDK_HOME is required or Android NDK must be installed under \$ANDROID_HOME/ndk" >&2
   exit 1
 fi
+
+export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+echo "Using Android NDK: $ANDROID_NDK_HOME"
 
 if ! command -v go >/dev/null 2>&1; then
   echo "Go is required to build sing-box libbox" >&2

@@ -64,6 +64,8 @@ class SingBoxConfigBuilderTest {
         assertContains(json, "198.18.0.0/15")
         assertContains(json, "\"final\":\"proxy-out\"")
         assertFalse(json.contains("\"type\":\"dns\""))
+        assertFalse(json.contains("\"rule_set\""))
+        assertFalse(json.contains("raw.githubusercontent.com"))
     }
 
     @Test
@@ -82,6 +84,39 @@ class SingBoxConfigBuilderTest {
         assertContains(json, "\"type\":\"https\"")
         assertContains(json, "\"server\":\"1.1.1.1\"")
         assertContains(json, "\"path\":\"/dns-query\"")
+    }
+
+    @Test
+    fun blankTunInterfaceNameIsOmittedForAutoAllocation() {
+        val json =
+            builder.build(
+                VlessConfig(
+                    uuid = "123e4567-e89b-12d3-a456-426614174000",
+                    address = "example.com",
+                    port = 443,
+                ),
+                AntiDetectConfig(),
+                SingBoxOptions(interfaceName = ""),
+            )
+
+        assertFalse(json.contains("\"interface_name\""))
+    }
+
+    @Test
+    fun cacheFilePathCanBePinnedForPrivilegedRuntimes() {
+        val json =
+            builder.build(
+                VlessConfig(
+                    uuid = "123e4567-e89b-12d3-a456-426614174000",
+                    address = "example.com",
+                    port = 443,
+                ),
+                AntiDetectConfig(),
+                SingBoxOptions(cacheFilePath = "/Users/test/.ultra-client/cache.db"),
+            )
+
+        assertContains(json, "\"cache_file\"")
+        assertContains(json, "\"path\":\"/Users/test/.ultra-client/cache.db\"")
     }
 
     @Test
